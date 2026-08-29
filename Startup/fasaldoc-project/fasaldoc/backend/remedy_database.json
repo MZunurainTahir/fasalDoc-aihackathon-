@@ -1,0 +1,26 @@
+{
+  "Tomato___Early_blight": {
+    "organic": "Remove and destroy affected leaves; apply neem oil spray every 5-7 days.",
+    "chemical": "Chlorothalonil or Mancozeb-based fungicide.",
+    "dosage": "Follow product label - typically every 7-10 days during active infection.",
+    "local_products": ["Score 250 EC", "Antracol 70 WP"]
+  },
+  "Tomato___Late_blight": {
+    "organic": "Improve air circulation, avoid overhead watering, remove infected plants immediately.",
+    "chemical": "Metalaxyl + Mancozeb combination fungicide.",
+    "dosage": "As per product label - apply preventively in humid conditions.",
+    "local_products": ["Ridomil Gold"]
+  },
+  "Wheat___Leaf_rust": {
+    "organic": "Use resistant varieties in future planting; remove volunteer wheat plants.",
+    "chemical": "Propiconazole or Tebuconazole-based fungicide.",
+    "dosage": "As per product label at first sign of rust pustules.",
+    "local_products": ["Tilt 250 EC"]
+  },
+  "Cotton___Bacterial_blight": {
+    "organic": "Use certified disease-free seed; avoid working in fields when wet.",
+    "chemical": "Copper oxychloride spray.",
+    "dosage": "As per product label - typically every 10-14 days.",
+    "local_products": ["Cuprofix"]
+  }
+}

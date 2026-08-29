@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: "Figtree", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* FasalDoc Agricultural Palette (from PRD) */
+  --color-primary: #2E7D32;
+  --color-primary-light: #4CAF50;
+  --color-primary-bg: #E8F5E9;
+  --color-danger: #C62828;
+  --color-warning: #F57F17;
+  --color-success: #2E7D32;
+
+  --color-text-primary: #1B1B1B;
+  --color-text-muted: #6B7280;
+  --color-bg-primary: #FAFAFA;
+  --color-white: #FFFFFF;
+  --color-border: #E5E7EB;
+}
+
+/* Base reset */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Min touch target for interactive elements */
+.min-touch {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Smooth transitions on everything interactive */
+a, button, .clickable {
+  transition: all 150ms ease-out;
+  cursor: pointer;
+}
+
+/* Focus visible styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Safe area for bottom tab bar */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

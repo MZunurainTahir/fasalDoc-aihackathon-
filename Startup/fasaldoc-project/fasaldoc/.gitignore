@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Model artifacts (large files - don't commit to git, use Git LFS or cloud storage instead)
+*.keras
+*.tflite
+dataset/
+dataset_raw/
+
+# Node / Expo
+node_modules/
+.expo/
+*.log
+
+# Env/secrets
+.env
+kaggle.json
+
+# OS
+.DS_Store

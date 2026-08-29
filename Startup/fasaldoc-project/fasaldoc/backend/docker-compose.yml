@@ -1,0 +1,23 @@
+# FasalDoc - docker-compose for local development
+#
+# Usage:
+#   docker compose up --build
+#
+# This mounts your local main.py and model files as volumes, so you don't
+# need to rebuild the image every time you tweak backend code during development.
+# Remove the volumes section for production-style builds (bake everything into the image).
+
+services:
+  backend:
+    build: .
+    container_name: fasaldoc-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./main.py:/app/main.py
+      - ./fasaldoc_model.keras:/app/fasaldoc_model.keras
+      - ./class_names.json:/app/class_names.json
+      - ./remedy_database.json:/app/remedy_database.json
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

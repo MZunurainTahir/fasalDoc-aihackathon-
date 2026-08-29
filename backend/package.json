@@ -1,0 +1,21 @@
+{
+  "name": "fasaldoc-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FasalDoc backend — proxies image diagnosis and chat requests to an LLM provider so API keys never reach the browser.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0"
+  }
+}

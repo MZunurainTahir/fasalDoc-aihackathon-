@@ -1,0 +1,61 @@
+# FasalDoc - CI/CD pipeline
+#
+# What this does:
+#   1. On every push/PR to main: install deps, run basic checks (lint + import test)
+#   2. On push to main only: build the Docker image to confirm it builds cleanly
+#
+# This is intentionally simple for MVP stage - no automated deployment yet.
+# Add a deploy step (e.g. to Google Cloud Run / AWS ECS) once you have a real
+# server target and secrets configured in GitHub repo settings.
+
+name: FasalDoc Backend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Lint (basic syntax/style check)
+        run: flake8 main.py --max-line-length=100 --extend-ignore=E203
+
+      - name: Import check (catches broken imports/syntax early)
+        run: python -c "import ast; ast.parse(open('main.py').read())"
+
+  docker-build:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fasaldoc-backend:ci-test .
+
+# ---------------------------------------------------------
+# NEXT STEPS when you're ready to deploy for real:
+# 1. Add a "deploy" job here targeting your chosen host (Google Cloud Run is a good
+#    fit - simple container deploys, generous free tier).
+# 2. Store credentials as GitHub Secrets (Settings > Secrets and variables > Actions),
+#    never commit them to the repo.
+# 3. Consider adding a staging environment before deploying straight to production.
+# ---------------------------------------------------------
