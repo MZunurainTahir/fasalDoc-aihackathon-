@@ -5,6 +5,7 @@
  */
 import Dexie, { type Table } from "dexie";
 import { REMEDY_DATABASE } from "./remedyData";
+import { supabase } from "./supabase";
 
 /* ── Types mirroring Supabase schema ── */
 
@@ -143,8 +144,6 @@ export async function enqueueSync(
 export async function drainSyncQueue() {
   const ops = await db.pendingSync.toArray();
   if (ops.length === 0) return;
-
-  const { supabase } = await import("./supabase");
 
   for (const op of ops) {
     try {

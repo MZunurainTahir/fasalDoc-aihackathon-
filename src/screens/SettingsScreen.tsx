@@ -2,13 +2,17 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../lib/db";
-import { User, Globe, Wifi, Info, Mail, ChevronRight, LogOut, CheckCircle, Edit2, X, MapPin, Phone, Sprout, CloudOff, RefreshCw } from "lucide-react";
+import { User, Globe, Wifi, Info, Mail, ChevronRight, LogOut, CheckCircle, Edit2, X, MapPin, Phone, Sprout, CloudOff, RefreshCw, PhoneCall, Award, Moon, Sun } from "lucide-react";
 
 export default function SettingsScreen() {
   const { t, lang, setLang } = useLanguage();
   const { user, profile, signOut, updateProfile } = useAuth();
   const [offlineMode, setOfflineMode] = useState(
     () => localStorage.getItem("fasaldoc_offline") === "true"
+  );
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem("fasaldoc_dark") === "true" ||
+      window.matchMedia("(prefers-color-scheme: dark)").matches
   );
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [editing, setEditing] = useState(false);
@@ -42,6 +46,22 @@ export default function SettingsScreen() {
     localStorage.setItem("fasaldoc_offline", String(next));
   };
 
+  const toggleDark = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem("fasaldoc_dark", String(next));
+    if (next) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  useEffect(() => {
+    if (darkMode) document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+  }, [darkMode]);
+
   const handleSaveProfile = async () => {
     setSaving(true);
     await updateProfile({ full_name: fullName, location, phone, farming_type: farmingType });
@@ -57,7 +77,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const menuItemClass = "w-full bg-white rounded-2xl p-4 border border-border flex items-center justify-between hover:shadow-md hover:border-primary/10 transition-all duration-200 min-touch group";
+  const menuItemClass = "w-full bg-bg-elevated rounded-2xl p-4 border border-border flex items-center justify-between hover:shadow-md hover:border-primary/10 transition-all duration-200 min-touch group";
   const iconClass = "w-5 h-5 text-primary group-hover:scale-110 transition-transform duration-200";
   const arrowClass = "w-4 h-4 text-text-muted group-hover:text-primary transition-colors";
 
@@ -96,7 +116,7 @@ export default function SettingsScreen() {
 
       {/* Edit Profile Form */}
       {editing && (
-        <div className="mx-5 mb-4 bg-white rounded-3xl p-5 border border-border shadow-lg animate-fadeIn">
+        <div className="mx-5 mb-4 bg-bg-elevated rounded-3xl p-5 border border-border shadow-lg animate-fadeIn">
           <h3 className="font-bold text-sm text-text-primary mb-4">{t('auth.personalInfo')}</h3>
           <div className="space-y-3">
             <div className="relative">
@@ -106,7 +126,7 @@ export default function SettingsScreen() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={t('auth.fullName')}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-bg-secondary border border-border rounded-xl text-sm text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
               />
             </div>
             <div className="relative">
@@ -116,7 +136,7 @@ export default function SettingsScreen() {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder={t('auth.location')}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-bg-secondary border border-border rounded-xl text-sm text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
               />
             </div>
             <div className="relative">
@@ -126,7 +146,7 @@ export default function SettingsScreen() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={t('auth.phonePlaceholder')}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-bg-secondary border border-border rounded-xl text-sm text-text-primary focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
               />
             </div>
             <div>
@@ -139,7 +159,7 @@ export default function SettingsScreen() {
                     className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all border ${
                       farmingType === type
                         ? "border-primary bg-primary-bg text-primary"
-                        : "border-gray-200 text-text-muted hover:border-gray-300"
+                        : "border-border text-text-muted hover:border-border-strong"
                     }`}
                   >
                     {t(`auth.${type}`)}
@@ -150,7 +170,7 @@ export default function SettingsScreen() {
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => setEditing(false)}
-                className="flex-1 py-3 bg-gray-100 rounded-xl text-sm font-medium text-text-muted hover:bg-gray-200 transition-colors"
+                className="flex-1 py-3 bg-border rounded-xl text-sm font-medium text-text-muted hover:bg-border-strong transition-colors"
               >
                 {t('common.cancel')}
               </button>
@@ -174,7 +194,7 @@ export default function SettingsScreen() {
 
       <div className="px-5 space-y-2">
         {/* Language toggle */}
-        <button className={menuItemClass}>
+        <div className={menuItemClass}>
           <div className="flex items-center gap-3">
             <Globe className={iconClass} />
             <div className="text-left">
@@ -185,15 +205,34 @@ export default function SettingsScreen() {
             </div>
           </div>
           <button
-            onClick={(e) => { e.stopPropagation(); setLang(lang === "en" ? "ur" : "en"); }}
-            className={`relative w-12 h-7 rounded-full transition-colors min-touch ${lang === "ur" ? "bg-primary" : "bg-gray-300"}`}
+            onClick={() => setLang(lang === "en" ? "ur" : "en")}
+            className={`relative w-12 h-7 rounded-full transition-colors min-touch ${lang === "ur" ? "bg-primary" : "bg-border-strong"}`}
+            aria-label={t("settings.language")}
           >
             <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${lang === "ur" ? "translate-x-6" : "translate-x-0.5"}`} />
           </button>
-        </button>
+        </div>
+
+        {/* Dark mode */}
+        <div className={menuItemClass}>
+          <div className="flex items-center gap-3">
+            {darkMode ? <Moon className={iconClass} /> : <Sun className={iconClass} />}
+            <div className="text-left">
+              <p className="font-semibold text-sm text-text-primary">{t("settings.darkMode")}</p>
+              <p className="text-xs text-text-muted mt-0.5 max-w-[200px]">{t('settings.darkModeDesc')}</p>
+            </div>
+          </div>
+          <button
+            onClick={toggleDark}
+            className={`relative w-12 h-7 rounded-full transition-colors min-touch ${darkMode ? "bg-primary" : "bg-border-strong"}`}
+            aria-label={t("settings.darkMode")}
+          >
+            <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${darkMode ? "translate-x-6" : "translate-x-0.5"}`} />
+          </button>
+        </div>
 
         {/* Offline mode */}
-        <button className={menuItemClass}>
+        <div className={menuItemClass}>
           <div className="flex items-center gap-3">
             {offlineMode ? <CloudOff className={iconClass} /> : <Wifi className={iconClass} />}
             <div className="text-left">
@@ -212,15 +251,16 @@ export default function SettingsScreen() {
             </div>
           </div>
           <button
-            onClick={(e) => { e.stopPropagation(); toggleOffline(); }}
-            className={`relative w-12 h-7 rounded-full transition-colors min-touch ${offlineMode ? "bg-primary" : "bg-gray-300"}`}
+            onClick={toggleOffline}
+            className={`relative w-12 h-7 rounded-full transition-colors min-touch ${offlineMode ? "bg-primary" : "bg-border-strong"}`}
+            aria-label={t("settings.dataStorage")}
           >
             <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${offlineMode ? "translate-x-6" : "translate-x-0.5"}`} />
           </button>
-        </button>
+        </div>
 
         {/* About */}
-        <button className={menuItemClass}>
+        <div className={menuItemClass}>
           <div className="flex items-center gap-3">
             <Info className={iconClass} />
             <div className="text-left">
@@ -229,10 +269,10 @@ export default function SettingsScreen() {
             </div>
           </div>
           <ChevronRight className={arrowClass} />
-        </button>
+        </div>
 
         {/* Privacy */}
-        <button className={menuItemClass}>
+        <div className={menuItemClass}>
           <div className="flex items-center gap-3">
             <Mail className={iconClass} />
             <div className="text-left">
@@ -241,10 +281,10 @@ export default function SettingsScreen() {
             </div>
           </div>
           <ChevronRight className={arrowClass} />
-        </button>
+        </div>
 
         {/* Account info */}
-        <button className={`${menuItemClass} border-danger/10`}>
+        <div className={`${menuItemClass} border-danger/10`}>
           <div className="flex items-center gap-3">
             <User className="w-5 h-5 text-text-muted" />
             <div className="text-left">
@@ -253,23 +293,43 @@ export default function SettingsScreen() {
             </div>
           </div>
           <div className="w-2 h-2 rounded-full bg-primary" />
-        </button>
+        </div>
 
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="w-full bg-white rounded-2xl p-4 border border-danger/10 flex items-center gap-3 hover:shadow-md hover:border-danger/30 transition-all duration-200 min-touch group"
+          className="w-full bg-bg-elevated rounded-2xl p-4 border border-danger/10 flex items-center gap-3 hover:shadow-md hover:border-danger/30 transition-all duration-200 min-touch group"
         >
           <LogOut className="w-5 h-5 text-danger group-hover:scale-110 transition-transform" />
           <span className="font-semibold text-sm text-danger">{t('auth.logout')}</span>
         </button>
       </div>
 
-      <div className="mt-6 px-5 pb-4">
+      <div className="mt-6 px-5">
+        {/* Emergency Helplines */}
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-4 mb-4">
+          <h3 className="font-bold text-sm text-red-800 mb-2 flex items-center gap-2">
+            <PhoneCall className="w-4 h-4" />
+            {t('settings.helplineTitle')}
+          </h3>
+          <div className="space-y-1.5">
+            <p className="text-xs text-red-700 font-medium">{t('settings.agriHelpline')}</p>
+            <p className="text-xs text-red-700 font-medium">{t('settings.livestockHelpline')}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-5 pb-4">
         <p className="text-center text-xs text-text-muted flex items-center justify-center gap-1">
           <Sprout className="w-3 h-3" />
           FasalDoc {t("settings.version")} 0.1.0 (MVP)
         </p>
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          <Award className="w-3 h-3 text-emerald-600" />
+          <p className="text-[10px] text-emerald-700 font-semibold">
+            BanoQabil AI Hackathon 2025
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,12 @@ import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase, Diagnosis } from "../lib/supabase";
 import { db, isOnline } from "../lib/db";
-import { Leaf, Camera, ChevronRight, Sprout, Activity, TrendingUp, HeartPulse, Plus, WifiOff, BookOpen, Calculator, Presentation, Clock } from "lucide-react";
+import { Leaf, Camera, ChevronRight, Sprout, Activity, TrendingUp, HeartPulse, Plus, WifiOff, BookOpen, Calculator, Presentation, Clock, CloudRain, Award, TrendingDown, Minus, Droplets, Thermometer, Wind, MapPin } from "lucide-react";
+import { getCurrentMockWeather, fetchCurrentWeather, computeDiseaseRisk, riskColor, type WeatherSnapshot } from "../lib/weather";
+import { getPricesByProvince, trendSymbol, trendClass } from "../lib/marketPrices";
+import { getSelectedCity, setSelectedCity } from "../lib/farmProfile";
+import { detectNearestCity } from "../lib/weather";
+import { SkeletonList } from "../components/Skeleton";
 
 export default function HomeScreen() {
   const { t, lang } = useLanguage();
@@ -15,6 +20,30 @@ export default function HomeScreen() {
   const [scanCount, setScanCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [usingCached, setUsingCached] = useState(false);
+  const [selectedCity, setCity] = useState(getSelectedCity);
+  const [weather, setWeather] = useState<WeatherSnapshot>(() => getCurrentMockWeather(selectedCity));
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const riskAdvisory = computeDiseaseRisk(weather);
+
+  useEffect(() => {
+    let mounted = true;
+    setWeatherLoading(true);
+    fetchCurrentWeather(selectedCity).then((snapshot) => {
+      if (!mounted) return;
+      if (snapshot) setWeather(snapshot);
+      else setWeather(getCurrentMockWeather(selectedCity));
+      setWeatherLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [selectedCity]);
+
+  const detectLocation = async () => {
+    const nearest = await detectNearestCity();
+    if (nearest) {
+      setSelectedCity(nearest);
+      setCity(nearest);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -87,45 +116,68 @@ export default function HomeScreen() {
   return (
     <div className="flex flex-col flex-1 bg-bg-primary pb-4">
       {/* Greeting Section */}
-      <div className="px-5 pt-4 pb-2">
-        <p className="text-text-muted text-sm font-medium">{dateStr}</p>
-        <h1 className="text-xl font-heading font-bold text-text-primary mt-0.5">
-          {greeting.split(',')[0]}<span className="text-primary">,</span>
-          <br />
-          <span className="text-lg">{greeting.split(',')[1]}</span>
-        </h1>
+      <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-text-muted text-sm font-medium">{dateStr}</p>
+          <h1 className="text-xl font-heading font-bold text-text-primary mt-0.5">
+            {greeting.split(',')[0]}<span className="text-primary">,</span>
+            <br />
+            <span className="text-lg">{greeting.split(',')[1]}</span>
+          </h1>
+        </div>
+        <button
+          onClick={detectLocation}
+          className="shrink-0 flex items-center gap-1 px-3 py-2 bg-bg-elevated border border-border rounded-xl text-[10px] font-bold text-text-muted hover:border-primary/30 hover:text-primary transition-colors"
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          {selectedCity.nameEn}
+        </button>
       </div>
 
       {/* Offline cached indicator */}
       {usingCached && (
-        <div className="mx-5 mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
-          <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          <p className="text-xs text-amber-700 font-medium">{t('offline.dataFromCache')}</p>
+        <div className="mx-5 mb-3 px-3 py-2 bg-warning-bg border border-warning/20 rounded-xl flex items-center gap-2">
+          <WifiOff className="w-3.5 h-3.5 text-warning shrink-0" />
+          <p className="text-xs text-warning font-medium">{t('offline.dataFromCache')}</p>
         </div>
       )}
+
+      {/* BanoQabil AI Hackathon Badge */}
+      <div className="px-5 mb-4">
+        <div className="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 rounded-2xl p-4 shadow-lg shadow-emerald-600/20 flex items-center gap-3 animate-scaleIn">
+          <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
+            <Award className="w-6 h-6 text-amber-300" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-bold text-sm">BanoQabil AI Hackathon</p>
+            <p className="text-white/70 text-[11px]">{lang === "ur" ? "AI زراعت ہیکاتھن — پاکستان" : "AI Agriculture Innovation — Pakistan"}</p>
+          </div>
+          <span className="text-[10px] bg-white/20 text-white px-2.5 py-1 rounded-full font-bold">2025</span>
+        </div>
+      </div>
 
       {/* Stats Row */}
       <div className="px-5 mt-2 mb-5">
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-white rounded-2xl p-3.5 border border-border shadow-sm">
+          <div className="bg-bg-elevated rounded-2xl p-3.5 border border-border shadow-sm">
             <div className="w-8 h-8 bg-primary-bg rounded-xl flex items-center justify-center mb-2">
               <Camera className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-lg font-bold text-text-primary">{scanCount}</p>
+            <p className="text-lg font-bold text-text-primary animate-countUp">{scanCount}</p>
             <p className="text-xs text-text-muted">{t('home.scansThisMonth')}</p>
           </div>
-          <div className="bg-white rounded-2xl p-3.5 border border-border shadow-sm">
-            <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center mb-2">
-              <HeartPulse className="w-4 h-4 text-amber-600" />
+          <div className="bg-bg-elevated rounded-2xl p-3.5 border border-border shadow-sm">
+            <div className="w-8 h-8 bg-warning-bg rounded-xl flex items-center justify-center mb-2">
+              <HeartPulse className="w-4 h-4 text-warning" />
             </div>
-            <p className="text-lg font-bold text-text-primary">{activeCases}</p>
+            <p className="text-lg font-bold text-text-primary animate-countUp">{activeCases}</p>
             <p className="text-xs text-text-muted">{t('home.pendingReports')}</p>
           </div>
-          <div className="bg-white rounded-2xl p-3.5 border border-border shadow-sm">
-            <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center mb-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
+          <div className="bg-bg-elevated rounded-2xl p-3.5 border border-border shadow-sm">
+            <div className="w-8 h-8 bg-info-bg rounded-xl flex items-center justify-center mb-2">
+              <TrendingUp className="w-4 h-4 text-info" />
             </div>
-            <p className="text-lg font-bold text-text-primary">
+            <p className="text-lg font-bold text-text-primary animate-countUp">
               {recentDiagnoses.filter(d => d.confidence && d.confidence >= 0.7).length}
             </p>
             <p className="text-xs text-text-muted">{t('home.diseasesIdentified')}</p>
@@ -141,13 +193,13 @@ export default function HomeScreen() {
         <div className="flex gap-3">
           <button
             onClick={() => navigate("/capture?mode=crop")}
-            className="flex-1 bg-gradient-to-br from-primary to-primary-light rounded-2xl p-5 flex flex-col items-center gap-2 hover:shadow-xl hover:shadow-primary/20 active:scale-[0.97] transition-all duration-200 min-touch shadow-lg"
+            className="flex-1 bg-gradient-to-br from-primary to-primary-light rounded-2xl p-5 flex flex-col items-center gap-2 hover:shadow-xl hover:shadow-primary/20 active:scale-[0.97] transition-all duration-200 min-touch shadow-lg pulse-glow"
           >
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
               <Leaf className="w-6 h-6 text-white" />
             </div>
             <span className="text-white font-bold text-sm">{t("home.scanCrop")}</span>
-            <span className="text-white/70 text-xs">Quick diagnose</span>
+            <span className="text-white/70 text-xs">{lang === "ur" ? "فوری تشخیص" : "Instant diagnosis"}</span>
           </button>
 
           <button
@@ -158,27 +210,116 @@ export default function HomeScreen() {
               <Sprout className="w-6 h-6 text-white" />
             </div>
             <span className="text-white font-bold text-sm">{t("home.scanLivestock")}</span>
-            <span className="text-white/70 text-xs">Check health</span>
+            <span className="text-white/70 text-xs">{lang === "ur" ? "صحت جانچ" : "Health check"}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Weather Disease Risk Alert */}
+      <div className="px-5 mb-5">
+        <div
+          className="rounded-2xl p-4 flex items-start gap-3 border"
+          style={{
+            background: `linear-gradient(135deg, ${riskColor(riskAdvisory.level)}10, ${riskColor(riskAdvisory.level)}05)`,
+            borderColor: `${riskColor(riskAdvisory.level)}30`,
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: `${riskColor(riskAdvisory.level)}20` }}
+          >
+            <CloudRain className="w-5 h-5" style={{ color: riskColor(riskAdvisory.level) }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-bold text-sm" style={{ color: riskColor(riskAdvisory.level) }}>
+                {lang === "ur" ? riskAdvisory.titleUrdu : riskAdvisory.title}
+              </p>
+              <span
+                className="text-[10px] px-2 py-0.5 rounded-full font-bold text-white"
+                style={{ background: riskColor(riskAdvisory.level) }}
+              >
+                {riskAdvisory.score}%
+              </span>
+            </div>
+            <p className="text-xs mt-0.5" style={{ color: `${riskColor(riskAdvisory.level)}CC` }}>
+              {lang === "ur" ? riskAdvisory.messageUrdu : riskAdvisory.message}
+            </p>
+            <div className="flex items-center gap-3 mt-2 text-[10px] text-text-muted">
+              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {weather.location}</span>
+              {weatherLoading && <span className="text-text-muted/60">({lang === "ur" ? "لوڈ ہورہا ہے" : "loading"})</span>}
+            </div>
+            <div className="flex items-center gap-3 mt-1 text-[10px] text-text-muted">
+              <span className="flex items-center gap-1"><Thermometer className="w-3 h-3" /> {weather.tempC}°C</span>
+              <span className="flex items-center gap-1"><Droplets className="w-3 h-3" /> {weather.humidity}%</span>
+              <span className="flex items-center gap-1"><Wind className="w-3 h-3" /> {weather.rainfallMm}mm</span>
+            </div>
+            <button
+              onClick={() => navigate("/tools")}
+              className="mt-2 text-[11px] font-bold flex items-center gap-1 hover:underline"
+              style={{ color: riskColor(riskAdvisory.level) }}
+            >
+              {lang === "ur" ? "مزید تفصیلات" : "View forecast & advisory"} <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Market Prices Widget */}
+      <div className="px-5 mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide">
+            {lang === "ur" ? `${selectedCity.province === "punjab" ? "پنجاب" : "صوبہ"} کے منڈی ریٹ` : `${selectedCity.province.charAt(0).toUpperCase() + selectedCity.province.slice(1)} Mandi Rates`}
+          </h2>
+          <button
+            onClick={() => navigate("/tools")}
+            className="text-primary text-xs font-semibold hover:underline"
+          >
+            {lang === "ur" ? "سب دیکھیں" : "See all"}
+          </button>
+        </div>
+        <div className="bg-bg-elevated rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="grid grid-cols-3 divide-x divide-border">
+            {getPricesByProvince(selectedCity.province).slice(0, 3).map((item) => {
+              const TrendIcon = item.trend === "up" ? TrendingUp : item.trend === "down" ? TrendingDown : Minus;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate("/tools")}
+                  className="p-3 text-center hover:bg-bg-secondary transition-colors"
+                >
+                  <p className="text-[10px] text-text-muted truncate">{lang === "ur" ? item.nameUr : item.nameEn}</p>
+                  <p className="text-sm font-bold text-text-primary">Rs. {item.avgPrice.toLocaleString()}</p>
+                  <div className={`flex items-center justify-center gap-0.5 text-[10px] font-medium ${trendClass(item.trend)}`}>
+                    <TrendIcon className="w-3 h-3" />
+                    <span>{trendSymbol(item.trend)} {Math.abs(item.trendPercent)}%</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="bg-bg-secondary px-3 py-2 text-[10px] text-text-muted text-center border-t border-border">
+            {lang === "ur" ? `تازہ ترین ریٹ — ${selectedCity.nameUr} اور اطراف کی منڈیاں` : `Latest rates from ${selectedCity.nameEn} & nearby mandis`}
+          </div>
         </div>
       </div>
 
       {/* Active Cases */}
       {activeCases > 0 && (
         <div className="px-5 mb-5">
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+          <div className="bg-warning-bg border border-warning/20 rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                <Activity className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-warning/20 rounded-full flex items-center justify-center">
+                <Activity className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="font-semibold text-sm text-amber-800">{activeCases} Active {activeCases === 1 ? 'Case' : 'Cases'}</p>
-                <p className="text-xs text-amber-600">Track recovery progress</p>
+                <p className="font-semibold text-sm text-warning">{activeCases} Active {activeCases === 1 ? 'Case' : 'Cases'}</p>
+                <p className="text-xs text-warning/80">Track recovery progress</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/history")}
-              className="px-4 py-2 bg-white rounded-lg text-amber-700 text-sm font-medium shadow-sm hover:shadow transition-all"
+              className="px-4 py-2 bg-bg-elevated rounded-lg text-warning text-sm font-medium shadow-sm hover:shadow transition-all"
             >
               View
             </button>
@@ -202,7 +343,7 @@ export default function HomeScreen() {
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => navigate("/tools")}
-            className="bg-white rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
+            className="bg-bg-elevated rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
           >
             <div className="w-9 h-9 bg-primary-bg rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
               <BookOpen className="w-4 h-4 text-primary" />
@@ -212,30 +353,30 @@ export default function HomeScreen() {
           </button>
           <button
             onClick={() => navigate("/tools")}
-            className="bg-white rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
+            className="bg-bg-elevated rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
           >
-            <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-              <Calculator className="w-4 h-4 text-amber-600" />
+            <div className="w-9 h-9 bg-warning-bg rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <Calculator className="w-4 h-4 text-warning" />
             </div>
             <p className="font-bold text-xs text-text-primary">{t('home.calc')}</p>
             <p className="text-[10px] text-text-muted mt-0.5 leading-tight">{lang === "ur" ? "ایکڑ / کنال کا حساب" : "Acre & kanal dosage"}</p>
           </button>
           <button
             onClick={() => navigate("/tools")}
-            className="bg-white rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
+            className="bg-bg-elevated rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
           >
-            <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-              <Presentation className="w-4 h-4 text-green-700" />
+            <div className="w-9 h-9 bg-success-bg rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <Presentation className="w-4 h-4 text-success" />
             </div>
             <p className="font-bold text-xs text-text-primary">{t('home.pitchDeck')}</p>
-            <p className="text-[10px] text-text-muted mt-0.5 leading-tight">{lang === "ur" ? "HATCH ڈیک" : "For competition judges"}</p>
+            <p className="text-[10px] text-text-muted mt-0.5 leading-tight">{lang === "ur" ? "BanoQabil AI Hackathon ڈیک" : "For BanoQabil AI Hackathon judges"}</p>
           </button>
           <button
             onClick={() => navigate("/history")}
-            className="bg-white rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
+            className="bg-bg-elevated rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 text-left group"
           >
-            <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-              <Clock className="w-4 h-4 text-blue-600" />
+            <div className="w-9 h-9 bg-info-bg rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+              <Clock className="w-4 h-4 text-info" />
             </div>
             <p className="font-bold text-xs text-text-primary">{lang === "ur" ? "بحالی ٹریکر" : "Recovery Tracker"}</p>
             <p className="text-[10px] text-text-muted mt-0.5 leading-tight">{lang === "ur" ? "فعال مقدمات" : "Track active cases"}</p>
@@ -258,21 +399,9 @@ export default function HomeScreen() {
         </div>
 
         {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-xl p-3 border border-border animate-pulse">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-1.5" />
-                    <div className="h-3 bg-gray-100 rounded w-1/2" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <SkeletonList count={3} />
         ) : recentDiagnoses.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center border border-border shadow-sm">
+          <div className="bg-bg-elevated rounded-2xl p-8 text-center border border-border shadow-sm">
             <div className="w-16 h-16 bg-primary-bg rounded-full flex items-center justify-center mx-auto mb-4">
               <Camera className="w-7 h-7 text-primary" />
             </div>
@@ -294,10 +423,10 @@ export default function HomeScreen() {
               <button
                 key={scan.id}
                 onClick={() => navigate("/history")}
-                className="w-full bg-white rounded-xl p-3 flex items-center gap-3 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 min-touch group"
+                className="w-full bg-bg-elevated rounded-xl p-3 flex items-center gap-3 border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 min-touch group"
               >
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${
-                  scan.type === "crop" ? "bg-primary-bg" : "bg-amber-50"
+                  scan.type === "crop" ? "bg-primary-bg" : "bg-warning-bg"
                 }`}>
                   {scan.type === "crop" ? "🌾" : "🐄"}
                 </div>
@@ -309,7 +438,7 @@ export default function HomeScreen() {
                     {scan.confidence && (
                       <span className={`text-xs font-medium ${
                         scan.confidence >= 0.8 ? 'text-primary' :
-                        scan.confidence >= 0.5 ? 'text-amber-600' : 'text-danger'
+                        scan.confidence >= 0.5 ? 'text-warning' : 'text-danger'
                       }`}>
                         {(scan.confidence * 100).toFixed(0)}%
                       </span>
@@ -320,7 +449,7 @@ export default function HomeScreen() {
                       })}
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      scan.type === "crop" ? "bg-primary-bg text-primary" : "bg-amber-50 text-amber-700"
+                      scan.type === "crop" ? "bg-primary-bg text-primary" : "bg-warning-bg text-warning"
                     }`}>
                       {scan.type === "crop" ? "Crop" : "Livestock"}
                     </span>

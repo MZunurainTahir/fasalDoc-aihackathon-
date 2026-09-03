@@ -4,6 +4,7 @@
  * Falls back to localStorage for simple preferences.
  */
 import { db, generateLocalId, enqueueSync, isOnline } from "./db";
+import { supabase } from "./supabase";
 
 export interface ScanEntry {
   id: string;
@@ -72,7 +73,6 @@ export async function saveToHistory(entry: ScanEntry): Promise<void> {
 
   // If online, sync to Supabase immediately
   if (isOnline()) {
-    const { supabase } = await import("./supabase");
     try {
       const { data, error } = await supabase.from("diagnoses").insert({
         type: entry.type,

@@ -21,9 +21,11 @@ interface SymptomState {
 function mockDiagnosis(mode: "crop" | "livestock") {
   const crops = [
     { disease: "Tomato___Early_blight", displayDisease: "Tomato Early Blight", confidence: 0.87 },
+    { disease: "Tomato___Late_blight", displayDisease: "Tomato Late Blight", confidence: 0.92 },
     { disease: "Wheat___Leaf_rust", displayDisease: "Wheat Leaf Rust", confidence: 0.91 },
     { disease: "Rice___Blast", displayDisease: "Rice Blast", confidence: 0.78 },
-    { disease: "Cotton___Bacterial_blight", displayDisease: "Cotton Bacterial Blight", confidence: 0.85 },
+    { disease: "Cotton___Whitefly", displayDisease: "Cotton Whitefly", confidence: 0.84 },
+    { disease: "Maize___Fall_Armyworm", displayDisease: "Maize Fall Armyworm", confidence: 0.89 },
     { disease: "Potato___Late_Blight", displayDisease: "Potato Late Blight", confidence: 0.92 },
   ];
   const livestock = [
@@ -89,6 +91,7 @@ export default function CaptureScreen() {
   const [result, setResult] = useState<{ disease: string; remedy: string; confidence: number; remedyKey?: string } | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [treatTab, setTreatTab] = useState<"organic" | "chemical">("organic");
+  const [fieldNotes, setFieldNotes] = useState("");
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +105,7 @@ export default function CaptureScreen() {
     setCapturedImage(null);
     setResult(null);
     setSymptoms({ eating: null, discharge: null, lethargic: null });
+    setFieldNotes("");
     setSaveSuccess(false);
   }, []);
 
@@ -113,6 +117,7 @@ export default function CaptureScreen() {
       const compressed = await compressImage(reader.result as string);
       setCapturedImage(compressed);
       setResult(null);
+      setFieldNotes("");
       setSaveSuccess(false);
     };
     reader.readAsDataURL(file);
@@ -175,7 +180,7 @@ export default function CaptureScreen() {
       predicted_disease: diagnosis.disease,
       confidence: diagnosis.confidence,
       remedy_applied: diagnosis.remedy,
-      notes: null,
+      notes: fieldNotes.trim() || null,
       created_at: now,
       _synced: false,
     });
@@ -206,6 +211,7 @@ export default function CaptureScreen() {
           predicted_disease: diagnosis.disease,
           confidence: diagnosis.confidence,
           remedy_applied: diagnosis.remedy,
+          notes: fieldNotes.trim() || null,
         });
         if (!error) {
           await db.diagnoses.where("localId").equals(localId).modify({ _synced: true });
@@ -220,6 +226,7 @@ export default function CaptureScreen() {
           predicted_disease: diagnosis.disease,
           confidence: diagnosis.confidence,
           remedy_applied: diagnosis.remedy,
+          notes: fieldNotes.trim() || null,
           created_at: now,
         });
       }
@@ -233,6 +240,7 @@ export default function CaptureScreen() {
         predicted_disease: diagnosis.disease,
         confidence: diagnosis.confidence,
         remedy_applied: diagnosis.remedy,
+        notes: fieldNotes.trim() || null,
         created_at: now,
       });
     }
@@ -286,8 +294,8 @@ export default function CaptureScreen() {
 
   const inputClass = "hidden";
   const confidenceColor = result?.confidence ? (
-    result.confidence >= 0.8 ? "bg-green-50 text-primary border-green-200" :
-    result.confidence >= 0.5 ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-danger border-red-200"
+    result.confidence >= 0.8 ? "bg-success-bg text-primary border-success/30" :
+    result.confidence >= 0.5 ? "bg-warning-bg text-warning border-warning/30" : "bg-danger-bg text-danger border-danger/30"
   ) : "";
 
   return (
@@ -295,12 +303,12 @@ export default function CaptureScreen() {
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors min-touch">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-border transition-colors min-touch">
             <ArrowLeft className="w-5 h-5 text-text-primary" />
           </button>
           <h1 className="text-lg font-heading font-bold text-text-primary">{t("tab.scan")}</h1>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-text-muted bg-white px-3 py-1.5 rounded-full border border-border">
+        <div className="flex items-center gap-1.5 text-xs text-text-muted bg-bg-elevated px-3 py-1.5 rounded-full border border-border">
           <ScanLine className="w-3.5 h-3.5" />
           {mode === "crop" ? "Crop" : "Livestock"}
         </div>
@@ -313,7 +321,7 @@ export default function CaptureScreen() {
           className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 min-touch ${
             mode === "crop"
               ? "bg-gradient-to-r from-primary to-primary-light text-white shadow-lg shadow-primary/20"
-              : "bg-white text-text-muted border-2 border-gray-100 hover:border-gray-200"
+              : "bg-bg-elevated text-text-muted border-2 border-border hover:border-border-strong"
           }`}
         >
           <Leaf className="w-4 h-4 inline mr-1.5" />
@@ -324,7 +332,7 @@ export default function CaptureScreen() {
           className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 min-touch ${
             mode === "livestock"
               ? "bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-lg shadow-amber-600/20"
-              : "bg-white text-text-muted border-2 border-gray-100 hover:border-gray-200"
+              : "bg-bg-elevated text-text-muted border-2 border-border hover:border-border-strong"
           }`}
         >
           <Sprout className="w-4 h-4 inline mr-1.5" />
@@ -336,9 +344,9 @@ export default function CaptureScreen() {
         <div className="flex-1 flex flex-col px-5 gap-4 overflow-y-auto">
           {/* Livestock symptom checklist */}
           {mode === "livestock" && (
-            <div className="bg-white rounded-2xl p-5 border border-border shadow-sm">
+            <div className="bg-bg-elevated rounded-2xl p-5 border border-border shadow-sm">
               <h3 className="font-bold text-sm text-text-primary mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <AlertTriangle className="w-4 h-4 text-warning" />
                 {t("livestock.symptoms")}
               </h3>
               <div className="space-y-3">
@@ -347,7 +355,7 @@ export default function CaptureScreen() {
                   { key: "discharge", label: t("livestock.discharge") },
                   { key: "lethargic", label: t("livestock.lethargic") },
                 ] as const).map(({ key, label }) => (
-                  <div key={key} className="flex items-center justify-between p-2 -mx-2 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div key={key} className="flex items-center justify-between p-2 -mx-2 rounded-xl hover:bg-bg-secondary transition-colors">
                     <span className="text-sm text-text-primary">{label}</span>
                     <div className="flex gap-1.5">
                       <button
@@ -355,7 +363,7 @@ export default function CaptureScreen() {
                         className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all min-touch ${
                           symptoms[key] === "yes"
                             ? "bg-danger text-white shadow-sm"
-                            : "bg-gray-100 text-text-muted hover:bg-gray-200"
+                            : "bg-border text-text-muted hover:bg-border-strong"
                         }`}
                       >
                         {t("livestock.yes")}
@@ -365,7 +373,7 @@ export default function CaptureScreen() {
                         className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all min-touch ${
                           symptoms[key] === "no"
                             ? "bg-primary text-white shadow-sm"
-                            : "bg-gray-100 text-text-muted hover:bg-gray-200"
+                            : "bg-border text-text-muted hover:bg-border-strong"
                         }`}
                       >
                         {t("livestock.no")}
@@ -374,7 +382,7 @@ export default function CaptureScreen() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-text-muted mt-3 italic border-t border-gray-100 pt-3">
+              <p className="text-xs text-text-muted mt-3 italic border-t border-border pt-3">
                 {t("capture.livestockDisclaimer")}
               </p>
             </div>
@@ -382,8 +390,8 @@ export default function CaptureScreen() {
 
           {/* Capture area */}
           <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
-            <div className="relative">
-              <div className="w-40 h-40 rounded-full bg-gradient-to-br from-primary-bg to-green-100 flex items-center justify-center">
+            <div className="relative animate-float">
+              <div className="w-40 h-40 rounded-full bg-gradient-to-br from-primary-bg to-success-bg flex items-center justify-center">
                 <Camera className="w-14 h-14 text-primary" />
               </div>
               <div className="absolute -top-1 -right-1 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
@@ -406,7 +414,7 @@ export default function CaptureScreen() {
               </button>
               <button
                 onClick={() => galleryInputRef.current?.click()}
-                className="flex-1 bg-white text-text-primary py-4 rounded-2xl font-semibold text-sm border-2 border-gray-100 hover:border-gray-200 hover:shadow-md active:scale-[0.97] transition-all duration-200 min-touch flex items-center justify-center gap-2"
+                className="flex-1 bg-bg-elevated text-text-primary py-4 rounded-2xl font-semibold text-sm border-2 border-border hover:border-border-strong hover:shadow-md active:scale-[0.97] transition-all duration-200 min-touch flex items-center justify-center gap-2"
               >
                 <Upload className="w-5 h-5" />
                 {t("capture.uploadPhoto")}
@@ -416,6 +424,36 @@ export default function CaptureScreen() {
             <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className={inputClass} onChange={handleFileCapture} />
             {/* Gallery input — opens device file picker/gallery. No accept restriction to avoid triggering camera on mobile browsers */}
             <input ref={galleryInputRef} type="file" className={inputClass} onChange={handleFileCapture} />
+          </div>
+
+          {/* Sample test images for hackathon demo */}
+          <div className="pb-6">
+            <p className="text-xs text-text-muted font-bold uppercase tracking-wide mb-2.5 text-center">
+              {t("capture.samplePhotos")}
+            </p>
+            <div className="flex gap-2 justify-center flex-wrap">
+              {[
+                { label: lang === "ur" ? "گندم کنگی" : "Wheat Rust", img: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&auto=format&fit=crop&q=60", key: "wheat" },
+                { label: lang === "ur" ? "ٹماٹر جھلساؤ" : "Tomato Blight", img: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200&auto=format&fit=crop&q=60", key: "tomato" },
+                { label: lang === "ur" ? "مویشی بیماری" : "Livestock FMD", img: "https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=200&auto=format&fit=crop&q=60", key: "cow" },
+                { label: lang === "ur" ? "آلو جھلساؤ" : "Potato Blight", img: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=200&auto=format&fit=crop&q=60", key: "potato" },
+              ].map((sample) => (
+                <button
+                  key={sample.key}
+                  onClick={() => {
+                    setCapturedImage(sample.img);
+                    setResult(null);
+                    setSaveSuccess(false);
+                  }}
+                  className="flex flex-col items-center gap-1.5 group"
+                >
+                  <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-border-strong group-hover:border-primary group-hover:shadow-md transition-all">
+                    <img src={sample.img} alt={sample.label} className="w-full h-full object-cover" />
+                  </div>
+                  <span className="text-[10px] font-medium text-text-muted group-hover:text-primary transition-colors">{sample.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -432,10 +470,25 @@ export default function CaptureScreen() {
               <span className="text-white text-lg leading-none">&times;</span>
             </button>
           </div>
-          <div className="flex items-center gap-2 text-xs text-text-muted bg-white px-4 py-2 rounded-full border border-border">
+          <div className="flex items-center gap-2 text-xs text-text-muted bg-bg-elevated px-4 py-2 rounded-full border border-border">
             <CheckCircle className="w-3.5 h-3.5 text-primary" />
             {lang === "ur" ? "تصویر لے لی گئی۔ تجزیہ کے لیے تیار" : "Photo captured. Ready for analysis"}
           </div>
+
+          {/* Field notes */}
+          <div className="w-full max-w-sm">
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-wide mb-1.5">
+              {lang === "ur" ? "فیلڈ نوٹس (اختیاری)" : "Field Notes (Optional)"}
+            </label>
+            <textarea
+              value={fieldNotes}
+              onChange={(e) => setFieldNotes(e.target.value)}
+              placeholder={lang === "ur" ? "مثلاً کون سی فصل، عمر، کیا علامات دیکھی..." : "e.g., crop stage, symptoms observed, field location..."}
+              className="w-full px-3 py-2.5 bg-bg-elevated border border-border rounded-xl text-xs focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all resize-none"
+              rows={2}
+            />
+          </div>
+
           <button
             onClick={handleDiagnose}
             className="bg-gradient-to-r from-primary to-primary-light text-white w-full max-w-sm py-4 rounded-2xl font-bold text-base hover:shadow-xl hover:shadow-primary/20 active:scale-[0.97] transition-all duration-200 min-touch shadow-lg flex items-center justify-center gap-2"
@@ -479,7 +532,7 @@ export default function CaptureScreen() {
               </div>
             )}
 
-            <div className="bg-white rounded-2xl shadow-lg shadow-black/5 border border-border overflow-hidden">
+            <div className="bg-bg-elevated rounded-2xl shadow-lg shadow-black/5 border border-border overflow-hidden">
               {capturedImage && (
                 <div className="relative">
                   <img src={capturedImage} alt="Result" className="w-full h-44 object-cover" />
@@ -522,13 +575,24 @@ export default function CaptureScreen() {
                   </p>
                 )}
 
+                {/* Saved field notes */}
+                {fieldNotes.trim() && (
+                  <div className="mt-3 bg-warning-bg rounded-xl p-3 border border-warning/20">
+                    <p className="text-[10px] font-bold text-warning uppercase tracking-wide mb-1 flex items-center gap-1">
+                      <Info className="w-3.5 h-3.5" />
+                      {lang === "ur" ? "فیلڈ نوٹس" : "Field Notes"}
+                    </p>
+                    <p className="text-xs text-warning leading-relaxed">{fieldNotes}</p>
+                  </div>
+                )}
+
                 {/* Severity badge */}
                 {remedyInfo && (() => {
                   const severityConfig = {
-                    low: { color: "bg-green-100 text-green-700", label: "Low Risk", labelUr: "کم خطرہ" },
-                    medium: { color: "bg-amber-100 text-amber-700", label: "Moderate", labelUr: "درمیانہ" },
-                    high: { color: "bg-orange-100 text-orange-700", label: "High Risk", labelUr: "زیادہ خطرہ" },
-                    critical: { color: "bg-red-100 text-red-700", label: "Critical ⚠️", labelUr: "انتہائی خطرناک ⚠️" },
+                    low: { color: "bg-success-bg text-success", label: "Low Risk", labelUr: "کم خطرہ" },
+                    medium: { color: "bg-warning-bg text-warning", label: "Moderate", labelUr: "درمیانہ" },
+                    high: { color: "bg-warning-bg text-warning", label: "High Risk", labelUr: "زیادہ خطرہ" },
+                    critical: { color: "bg-danger-bg text-danger", label: "Critical ⚠️", labelUr: "انتہائی خطرناک ⚠️" },
                   };
                   const sev = severityConfig[remedyInfo.severity];
                   return (
@@ -546,8 +610,8 @@ export default function CaptureScreen() {
                         onClick={() => setTreatTab("organic")}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                           treatTab === "organic"
-                            ? "bg-green-600 text-white shadow-md"
-                            : "bg-gray-100 text-text-muted hover:bg-gray-200"
+                            ? "bg-success text-white shadow-md"
+                            : "bg-border text-text-muted hover:bg-border-strong"
                         }`}
                       >
                         <Leaf className="w-3.5 h-3.5" />
@@ -557,8 +621,8 @@ export default function CaptureScreen() {
                         onClick={() => setTreatTab("chemical")}
                         className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                           treatTab === "chemical"
-                            ? "bg-blue-600 text-white shadow-md"
-                            : "bg-gray-100 text-text-muted hover:bg-gray-200"
+                            ? "bg-info text-white shadow-md"
+                            : "bg-border text-text-muted hover:bg-border-strong"
                         }`}
                       >
                         <FlaskConical className="w-3.5 h-3.5" />
@@ -567,20 +631,20 @@ export default function CaptureScreen() {
                     </div>
 
                     {treatTab === "organic" ? (
-                      <div className="bg-green-50 rounded-xl p-4 border border-green-100 mb-3">
-                        <p className="text-sm text-green-800 leading-relaxed">
+                      <div className="bg-success-bg rounded-xl p-4 border border-success/20 mb-3">
+                        <p className="text-sm text-success leading-relaxed">
                           {lang === "ur" ? remedyInfo.organicUrdu : remedyInfo.organic}
                         </p>
                       </div>
                     ) : (
                       <>
-                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-2">
-                          <p className="text-sm text-blue-800 leading-relaxed">
+                        <div className="bg-info-bg rounded-xl p-4 border border-info/20 mb-2">
+                          <p className="text-sm text-info leading-relaxed">
                             {lang === "ur" ? remedyInfo.chemicalUrdu : remedyInfo.chemical}
                           </p>
                         </div>
                         {/* Dosage */}
-                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-2 flex items-start gap-2">
+                        <div className="bg-bg-secondary rounded-xl p-3 border border-border mb-2 flex items-start gap-2">
                           <Tag className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
                           <div>
                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wide mb-0.5">
@@ -606,27 +670,27 @@ export default function CaptureScreen() {
                           </div>
                         </div>
                         {/* Cost */}
-                        <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex items-center gap-2">
-                          <span className="text-amber-600 font-bold text-xs">💰 {lang === "ur" ? "تخمینہ لاگت:" : "Est. Cost:"}</span>
-                          <span className="text-amber-800 font-bold text-sm">{remedyInfo.estimatedCostPkr}</span>
+                        <div className="bg-warning-bg rounded-xl p-3 border border-warning/20 flex items-center gap-2">
+                          <span className="text-warning font-bold text-xs">💰 {lang === "ur" ? "تخمینہ لاگت:" : "Est. Cost:"}</span>
+                          <span className="text-warning font-bold text-sm">{remedyInfo.estimatedCostPkr}</span>
                         </div>
                       </>
                     )}
 
                     {/* Prevention */}
-                    <div className="mt-3 bg-purple-50 rounded-xl p-3 border border-purple-100">
-                      <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                    <div className="mt-3 bg-info-bg rounded-xl p-3 border border-info/20">
+                      <p className="text-[10px] font-bold text-info uppercase tracking-wide mb-1.5 flex items-center gap-1">
                         <ShieldCheck className="w-3.5 h-3.5" />
                         {lang === "ur" ? "احتیاطی تدابیر" : "Prevention"}
                       </p>
-                      <p className="text-xs text-purple-800 leading-relaxed">
+                      <p className="text-xs text-info leading-relaxed">
                         {lang === "ur" ? remedyInfo.preventionUrdu : remedyInfo.prevention}
                       </p>
                     </div>
                   </>
                 ) : (
                   /* Fallback plain remedy text */
-                  <div className="bg-gradient-to-br from-primary-bg to-white rounded-xl p-4 mb-4 border border-primary/10">
+                  <div className="bg-gradient-to-br from-primary-bg to-bg-secondary rounded-xl p-4 mb-4 border border-primary/10">
                     <h3 className="font-bold text-sm text-primary mb-2 flex items-center gap-1.5">
                       <CheckCircle className="w-4 h-4" />
                       {t("capture.treatment")}

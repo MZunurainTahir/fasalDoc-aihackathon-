@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase, ChatSession } from "../lib/supabase";
-import { db, isOnline, generateLocalId, enqueueSync } from "../lib/db";
+import { db, isOnline, generateLocalId } from "../lib/db";
 import { requestChatReply } from "../lib/api";
 import { generateClientRAGAnswer } from "../lib/ragClient";
 import { Send, Mic, MicOff, Camera, MessageSquare, Plus, WifiOff } from "lucide-react";
@@ -12,32 +12,6 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   id?: string;
-}
-
-function mockReply(userMsg: string): string {
-  const lower = userMsg.toLowerCase();
-  if (lower.includes("wheat") || lower.includes("گندم")) {
-    return "**Wheat Rust** 🍂\n\nOrange-brown streaks on leaves indicate rust. Here's what to do:\n\n1. Apply fungicide containing propiconazole\n2. Remove infected leaves\n3. Switch to rust-resistant varieties next season\n\nFor best results, snap a photo in the **Scan** tab for precise identification!";
-  }
-  if (lower.includes("cow") || lower.includes("گائے") || lower.includes("animal") || lower.includes("مویشی")) {
-    return "**Livestock Care** 🐄\n\nIf your animal seems unwell:\n\n1. **Isolate** the animal from others\n2. **Check temperature** — normal is 38-39°C\n3. Look for: nasal discharge, reduced appetite, diarrhea\n4. Ensure clean drinking water is available\n\n⚠️ For serious symptoms, consult a veterinarian immediately.";
-  }
-  if (lower.includes("photo") || lower.includes("scan") || lower.includes("تصویر") || lower.includes("اسکین")) {
-    return "📸 **Photo analysis recommended!**\n\nA picture would help me give you a much more accurate diagnosis. Just tap the button below to open the camera and capture the affected area.\n\n→ Go to **Scan** tab";
-  }
-  if (lower.includes("hello") || lower.includes("hi") || lower.includes("السلام") || lower.includes("ہیلو") || lower.includes("assalam")) {
-    return "👋 **Assalam-o-Alaikum!**\n\nI'm **FasalDoc's** agricultural health assistant. I can help with:\n\n🌾 **Crop diseases** — identify and treat\n🐄 **Livestock health** — symptoms and care\n💊 **Remedies** — step-by-step treatment\n\nHow can I help you today?";
-  }
-  if (lower.includes("rice") || lower.includes("چاول")) {
-    return "**Rice Blast** 🌾\n\nA serious fungal disease. Management steps:\n\n1. Use **resistant varieties** (e.g., IRRI lines)\n2. Apply **tricyclazole** fungicide at early signs\n3. **Avoid excess nitrogen** — it increases susceptibility\n4. Maintain **proper water depth** (5-10cm)\n\nSend a photo for more accurate assessment!";
-  }
-  if (lower.includes("tomato") || lower.includes("ٹماٹر")) {
-    return "**Tomato Issues** 🍅\n\nCommon tomato problems:\n\n**Early Blight** — brown spots with concentric rings\n→ Remove lower leaves, apply chlorothalonil\n\n**Late Blight** — dark, water-soaked lesions\n→ Apply copper fungicide immediately\n\n**Blossom End Rot** — black bottom of fruit\n→ Calcium deficiency, maintain even watering";
-  }
-  if (lower.includes("fertilizer") || lower.includes("کھاد")) {
-    return "**Fertilizer Guide** 🌱\n\nGeneral tips for South Asian farming:\n\n🌾 **Wheat**: DAP at sowing, urea at first irrigation\n🌱 **Rice**: NPK (20:10:10) at transplanting\n🍅 **Vegetables**: Well-rotted compost + balanced NPK\n\n⚠️ Always do a **soil test** before heavy fertilization\n\nNeed specific advice for your crop?";
-  }
-  return "Thank you for your question! 🤝\n\nFor the most accurate guidance:\n\n1️⃣ **Snap a photo** in the Scan tab for visual diagnosis\n2️⃣ **Describe symptoms** in more detail — which part is affected?\n3️⃣ **Mention the crop/animal type** and duration of the issue\n\nI'm here to help with practical, actionable advice!";
 }
 
 export default function AssistantScreen() {
@@ -235,7 +209,7 @@ export default function AssistantScreen() {
           created_at: now,
           updated_at: now,
           _synced: false,
-        }).catch(() => {});
+        }).then(() => {}, () => {});
 
         setSessions(prev => [{ id: sessionLocalId, user_id: currentUserId, title, created_at: now, updated_at: now } as ChatSession, ...prev]);
 
@@ -243,9 +217,9 @@ export default function AssistantScreen() {
         if (user && isOnline()) {
           supabase.from('chat_sessions').insert({ user_id: user.id, title }).select().single().then(({ data }) => {
             if (data) {
-              db.chatSessions.where("localId").equals(sessionLocalId).modify({ id: data.id, _synced: true }).catch(() => {});
+              db.chatSessions.where("localId").equals(sessionLocalId).modify({ id: data.id, _synced: true }).then(() => {}, () => {});
             }
-          }).catch(() => {});
+          }, () => {});
         }
       }
 
@@ -261,7 +235,7 @@ export default function AssistantScreen() {
           content: text,
           created_at: now,
           _synced: false,
-        }).catch(() => {});
+        }).then(() => {}, () => {});
 
         if (user && isOnline() && !sessionId.startsWith('local_')) {
           supabase.from('chat_messages').insert({
@@ -269,7 +243,7 @@ export default function AssistantScreen() {
             user_id: user.id,
             role: 'user',
             content: text,
-          }).catch(() => {});
+          }).then(() => {}, () => {});
         }
       }
 
@@ -307,7 +281,7 @@ export default function AssistantScreen() {
           content: aiReply,
           created_at: aiNow,
           _synced: false,
-        }).catch(() => {});
+        }).then(() => {}, () => {});
 
         if (user && isOnline() && !sessionId.startsWith('local_')) {
           supabase.from('chat_messages').insert({
@@ -315,7 +289,7 @@ export default function AssistantScreen() {
             user_id: user.id,
             role: 'assistant',
             content: aiReply,
-          }).catch(() => {});
+          }).then(() => {}, () => {});
         }
       }
     } catch (error) {
@@ -362,22 +336,22 @@ export default function AssistantScreen() {
 
       {/* Offline cached indicator */}
       {usingCached && (
-        <div className="mx-5 mt-2 mb-0 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
-          <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          <p className="text-xs text-amber-700 font-medium">{t('offline.dataFromCache')}</p>
+        <div className="mx-5 mt-2 mb-0 px-3 py-2 bg-warning-bg border border-warning/20 rounded-xl flex items-center gap-2">
+          <WifiOff className="w-3.5 h-3.5 text-warning shrink-0" />
+          <p className="text-xs text-warning font-medium">{t('offline.dataFromCache')}</p>
         </div>
       )}
 
       {/* Sessions sidebar */}
       {showSessions && sessions.length > 0 && (
-        <div className="mx-5 mt-2 mb-2 bg-white rounded-2xl border border-border shadow-lg overflow-hidden">
+        <div className="mx-5 mt-2 mb-2 bg-bg-elevated rounded-2xl border border-border shadow-lg overflow-hidden">
           <div className="p-2 max-h-48 overflow-y-auto">
             {sessions.map((s) => (
               <button
                 key={s.id}
                 onClick={() => loadSession(s.id)}
                 className={`w-full text-left p-3 rounded-xl text-sm transition-colors ${
-                  activeSession === s.id ? 'bg-primary-bg text-primary' : 'hover:bg-gray-50 text-text-primary'
+                  activeSession === s.id ? 'bg-primary-bg text-primary' : 'hover:bg-bg-secondary text-text-primary'
                 }`}
               >
                 <p className="font-medium truncate">{s.title}</p>
@@ -398,7 +372,7 @@ export default function AssistantScreen() {
               className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
                 msg.role === "user"
                   ? "bg-gradient-to-br from-primary to-primary-light text-white rounded-br-md shadow-md"
-                  : "bg-white border border-border text-text-primary rounded-bl-md shadow-sm"
+                  : "bg-bg-elevated border border-border text-text-primary rounded-bl-md shadow-sm"
               }`}
             >
               {msg.content}
@@ -408,7 +382,7 @@ export default function AssistantScreen() {
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-white border border-border rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+            <div className="bg-bg-elevated border border-border rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-primary rounded-full animate-bounce" />
                 <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.1s]" />
@@ -436,7 +410,7 @@ export default function AssistantScreen() {
             onClick={() => {
               setInput(chip.query);
             }}
-            className="shrink-0 bg-white border border-primary/20 text-primary hover:bg-primary-bg px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm"
+            className="shrink-0 bg-bg-elevated border border-primary/20 text-primary hover:bg-primary-bg px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm"
           >
             {chip.label}
           </button>
@@ -447,7 +421,7 @@ export default function AssistantScreen() {
       <div className="mx-5 mb-2">
         <button
           onClick={() => navigate("/capture?mode=crop")}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-bg to-white text-primary px-4 py-2.5 rounded-2xl text-sm font-medium border border-primary/10 hover:shadow-md transition-all duration-200 min-touch"
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-bg to-bg-secondary text-primary px-4 py-2.5 rounded-2xl text-sm font-medium border border-primary/10 hover:shadow-md transition-all duration-200 min-touch"
         >
           <Camera className="w-4 h-4" />
           {lang === "ur" ? "بصری تجزیہ کے لیے تصویر لیں" : "📸 Snap a photo for visual analysis"}
@@ -456,15 +430,15 @@ export default function AssistantScreen() {
 
       {/* Voice Status Indicator */}
       {voiceStatus && (
-        <div className="mx-5 mb-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-2 animate-pulse">
-          <div className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+        <div className="mx-5 mb-2 px-3 py-1.5 bg-success-bg border border-success/20 text-success text-xs font-semibold rounded-xl flex items-center gap-2 animate-pulse">
+          <div className="w-2 h-2 rounded-full bg-success animate-ping" />
           <span>{voiceStatus}</span>
         </div>
       )}
 
       {/* Input bar */}
       <div className="mx-5">
-        <div className="flex items-center gap-2 bg-white border-2 border-gray-100 focus-within:border-primary/30 rounded-2xl px-3 py-1.5 shadow-sm transition-all duration-200">
+        <div className="flex items-center gap-2 bg-bg-elevated border-2 border-border focus-within:border-primary/30 rounded-2xl px-3 py-1.5 shadow-sm transition-all duration-200">
           <button
             onClick={toggleListening}
             title={lang === "ur" ? "آواز کا استعمال کریں" : "Voice search"}

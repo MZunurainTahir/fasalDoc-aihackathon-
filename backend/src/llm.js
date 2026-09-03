@@ -1,33 +1,26 @@
 /**
  * Thin, high-speed LLM client.
- * Supports Gemini, Groq, and OpenRouter with strict low-latency timeouts (2.5s).
- * If external LLMs are down/slow or keys are invalid, falls back seamlessly to the RAG Knowledge Engine.
+ * Supports Gemini, Groq, and OpenRouter with configurable timeouts.
+ * If external LLMs are down/slow or keys are missing, falls back seamlessly to the RAG Knowledge Engine.
  */
 
 const GROQ_BASE_URL = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1";
-const GROQ_CHAT_MODEL = process.env.GROQ_CHAT_MODEL && !process.env.GROQ_CHAT_MODEL.includes("/")
-  ? process.env.GROQ_CHAT_MODEL
-  : "llama-3.3-70b-versatile";
-const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL && !process.env.GROQ_VISION_MODEL.includes("/")
-  ? process.env.GROQ_VISION_MODEL
-  : "llama-3.2-11b-vision-preview";
+const GROQ_CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile";
+const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || "llama-3.2-11b-vision-preview";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const OPENROUTER_CHAT_MODEL = process.env.OPENROUTER_CHAT_MODEL || "meta-llama/llama-3.3-70b-instruct";
 const OPENROUTER_VISION_MODEL = process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001";
 
-const GEMINI_MODEL = "gemini-2.0-flash";
-const TIMEOUT_MS = 2_500;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 20_000;
 
-function isValidApiKey(key, prefix) {
-  if (!key || typeof key !== "string" || key.length < 20) return false;
-  // If prefix check specified or general hex check for invalid dummy key placeholders
-  if (prefix && !key.startsWith(prefix)) return false;
-  // Ignore dummy hex placeholder keys (64 random hex chars without standard key format)
-  if (/^[0-9a-f]{50,}$/i.test(key) && !key.startsWith("gsk_") && !key.startsWith("sk-or-") && !key.startsWith("AIzaSy")) {
-    return false;
-  }
-  return true;
+/**
+ * Simple API key validation — just checks the key is a non-empty string
+ * with a minimum length. We trust that the user provides valid keys.
+ */
+function isValidApiKey(key) {
+  return typeof key === "string" && key.trim().length >= 10;
 }
 
 async function postJson(url, headers, body) {
@@ -42,7 +35,7 @@ async function postJson(url, headers, body) {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+      throw new Error(`HTTP ${res.status}: ${text.slice(0, 300)}`);
     }
     return await res.json();
   } finally {
@@ -53,9 +46,9 @@ async function postJson(url, headers, body) {
 export async function chatCompletion({ messages, imageDataUrl, jsonMode = false }) {
   const errors = [];
 
-  // 1. Try Gemini REST API if valid key present
+  // 1. Try Gemini REST API if key present
   const geminiKey = process.env.GEMINI_API_KEY;
-  if (isValidApiKey(geminiKey, "AIzaSy")) {
+  if (isValidApiKey(geminiKey)) {
     try {
       return await callGeminiApi({
         apiKey: geminiKey,
@@ -65,12 +58,13 @@ export async function chatCompletion({ messages, imageDataUrl, jsonMode = false 
       });
     } catch (err) {
       errors.push(`gemini: ${err.message}`);
+      console.warn("[LLM] Gemini failed:", err.message);
     }
   }
 
-  // 2. Try Groq (ultra fast) if key starts with gsk_ or passes validation
+  // 2. Try Groq
   const groqKey = process.env.GROQ_API_KEY;
-  if (isValidApiKey(groqKey, "gsk_")) {
+  if (isValidApiKey(groqKey)) {
     try {
       return await callOpenAICompatible({
         baseUrl: GROQ_BASE_URL,
@@ -82,12 +76,13 @@ export async function chatCompletion({ messages, imageDataUrl, jsonMode = false 
       });
     } catch (err) {
       errors.push(`groq: ${err.message}`);
+      console.warn("[LLM] Groq failed:", err.message);
     }
   }
 
-  // 3. Try OpenRouter if key starts with sk-or- or passes validation
+  // 3. Try OpenRouter
   const openrouterKey = process.env.OPENROUTER_API_KEY;
-  if (isValidApiKey(openrouterKey, "sk-or-")) {
+  if (isValidApiKey(openrouterKey)) {
     try {
       return await callOpenAICompatible({
         baseUrl: OPENROUTER_BASE_URL,
@@ -103,11 +98,12 @@ export async function chatCompletion({ messages, imageDataUrl, jsonMode = false 
       });
     } catch (err) {
       errors.push(`openrouter: ${err.message}`);
+      console.warn("[LLM] OpenRouter failed:", err.message);
     }
   }
 
   throw new Error(
-    errors.length ? `Providers failed or timed out — ${errors.join(" | ")}` : "No active LLM key"
+    errors.length ? `All providers failed — ${errors.join(" | ")}` : "No active LLM key configured"
   );
 }
 
@@ -200,3 +196,24 @@ export function parseJsonLoose(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+/**
+ * Log active LLM configuration on startup.
+ * Called from server.js after dotenv loads.
+ */
+export function logLLMConfig() {
+  const providers = [];
+  if (isValidApiKey(process.env.GEMINI_API_KEY)) {
+    providers.push(`  ✅ Gemini → model: ${GEMINI_MODEL}`);
+  }
+  if (isValidApiKey(process.env.GROQ_API_KEY)) {
+    providers.push(`  ✅ Groq → chat: ${GROQ_CHAT_MODEL}, vision: ${GROQ_VISION_MODEL}`);
+  }
+  if (isValidApiKey(process.env.OPENROUTER_API_KEY)) {
+    providers.push(`  ✅ OpenRouter → chat: ${OPENROUTER_CHAT_MODEL}, vision: ${OPENROUTER_VISION_MODEL}`);
+  }
+  if (providers.length === 0) {
+    console.warn("[LLM Config] ⚠️  No LLM provider API keys found — falling back to offline RAG only.");
+  } else {
+    console.log(`[LLM Config] Active providers (timeout: ${TIMEOUT_MS}ms):\n${providers.join("\n")}`);
+  }
+}

@@ -4,6 +4,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { diagnoseImage } from "./diagnose.js";
 import { chatReply } from "./chat.js";
+import { logLLMConfig } from "./llm.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -39,6 +40,8 @@ app.use("/api/", limiter);
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
+    app: "FasalDoc — AI Crop & Livestock Health",
+    hackathon: "BanoQabil AI Hackathon 2025",
     time: new Date().toISOString(),
     providers: {
       groq: Boolean(process.env.GROQ_API_KEY),
@@ -84,11 +87,8 @@ app.post("/api/chat", async (req, res) => {
 app.use((_req, res) => res.status(404).json({ error: "not_found" }));
 
 app.listen(PORT, () => {
-  console.log(`FasalDoc backend listening on port ${PORT}`);
-  if (!process.env.GROQ_API_KEY && !process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) {
-    console.warn(
-      "[warn] No LLM provider API key found (GROQ_API_KEY / GEMINI_API_KEY / OPENROUTER_API_KEY). " +
-        "Falling back to offline mock responses for /api/diagnose and /api/chat."
-    );
-  }
+  console.log(`\n🌾 FasalDoc Backend — AI Crop & Livestock Health`);
+  console.log(`   BanoQabil AI Hackathon 2025`);
+  console.log(`   Listening on port ${PORT}\n`);
+  logLLMConfig();
 });

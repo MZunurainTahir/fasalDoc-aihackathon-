@@ -122,9 +122,9 @@ export default function HistoryScreen() {
 
       {/* Offline cached indicator */}
       {usingCached && (
-        <div className="mx-5 mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
-          <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-          <p className="text-xs text-amber-700 font-medium">{t('offline.dataFromCache')}</p>
+        <div className="mx-5 mb-3 px-3 py-2 bg-warning-bg border border-warning/20 rounded-xl flex items-center gap-2">
+          <WifiOff className="w-3.5 h-3.5 text-warning shrink-0" />
+          <p className="text-xs text-warning font-medium">{t('offline.dataFromCache')}</p>
         </div>
       )}
 
@@ -132,24 +132,24 @@ export default function HistoryScreen() {
       {activeRecoveryCases.length > 0 && (
         <div className="px-5 mb-4">
           <h2 className="text-sm font-bold text-text-primary mb-2 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-amber-600" />
+            <Clock className="w-4 h-4 text-warning" />
             Active Recovery Cases ({activeRecoveryCases.length})
           </h2>
           <div className="space-y-2">
             {activeRecoveryCases.map((caseItem) => (
-              <div key={caseItem.id} className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <div key={caseItem.id} className="bg-warning-bg border border-warning/20 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Sprout className="w-4 h-4 text-amber-700" />
-                    <p className="font-semibold text-sm text-amber-800">
+                    <Sprout className="w-4 h-4 text-warning" />
+                    <p className="font-semibold text-sm text-warning">
                       {caseItem.diagnosis?.predicted_disease || 'Unknown'}
                     </p>
                   </div>
-                  <span className="text-xs text-amber-600 bg-white px-2 py-0.5 rounded-full">
+                  <span className="text-xs text-warning bg-bg-elevated px-2 py-0.5 rounded-full">
                     {caseItem.days_since_diagnosis || 0}d ago
                   </span>
                 </div>
-                <p className="text-xs text-amber-700 mb-3">
+                <p className="text-xs text-warning mb-3">
                   {lang === "ur" ? "حالت کیا ہے؟" : "How is it looking?"}
                 </p>
                 <div className="flex gap-1.5">
@@ -162,13 +162,13 @@ export default function HistoryScreen() {
                   </button>
                   <button
                     onClick={() => handleUpdateCaseStatus(caseItem.id, 'no_change')}
-                    className="flex-1 py-2 bg-amber-100 text-amber-700 rounded-xl text-xs font-semibold hover:bg-amber-200 transition-colors"
+                    className="flex-1 py-2 bg-warning-bg text-warning rounded-xl text-xs font-semibold hover:bg-warning/20 transition-colors"
                   >
                     No Change
                   </button>
                   <button
                     onClick={() => handleUpdateCaseStatus(caseItem.id, 'worse')}
-                    className="flex-1 py-2 bg-red-50 text-danger rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors"
+                    className="flex-1 py-2 bg-danger-bg text-danger rounded-xl text-xs font-semibold hover:bg-danger/20 transition-colors"
                   >
                     <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />
                     Worse
@@ -190,7 +190,7 @@ export default function HistoryScreen() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={lang === "ur" ? "بیماری کے نام سے تلاش کریں..." : "Search by disease name..."}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-bg-elevated border border-border rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10 focus:outline-none transition-all"
             />
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function HistoryScreen() {
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all min-touch ${
                 filter === f
                   ? "bg-primary text-white shadow-sm"
-                  : "bg-white text-text-muted border border-border hover:bg-gray-50"
+                  : "bg-bg-elevated text-text-muted border border-border hover:bg-bg-secondary"
               }`}
             >
               {f === "all" ? t("history.all") :
@@ -220,12 +220,12 @@ export default function HistoryScreen() {
       {loading ? (
         <div className="px-5 space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl p-3 border border-border animate-pulse">
+            <div key={i} className="bg-bg-elevated rounded-xl p-3 border border-border animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 bg-gray-200 rounded-xl" />
+                <div className="w-14 h-14 bg-border-strong rounded-xl" />
                 <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-4 bg-border-strong rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-border rounded w-1/2" />
                 </div>
               </div>
             </div>
@@ -258,11 +258,11 @@ export default function HistoryScreen() {
           {filtered.map((scan) => (
             <div
               key={scan.id}
-              className="bg-white rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/10 transition-all duration-200 cursor-pointer min-touch group"
+              className="bg-bg-elevated rounded-2xl p-4 border border-border hover:shadow-md hover:border-primary/10 transition-all duration-200 cursor-pointer min-touch group"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
-                  scan.type === "crop" ? "bg-primary-bg" : "bg-amber-50"
+                  scan.type === "crop" ? "bg-primary-bg" : "bg-warning-bg"
                 }`}>
                   {scan.type === "crop" ? "🌾" : "🐄"}
                 </div>
@@ -274,13 +274,13 @@ export default function HistoryScreen() {
                     {scan.confidence && (
                       <span className={`text-xs font-semibold ${
                         scan.confidence >= 0.8 ? 'text-primary' :
-                        scan.confidence >= 0.5 ? 'text-amber-600' : 'text-danger'
+                        scan.confidence >= 0.5 ? 'text-warning' : 'text-danger'
                       }`}>
                         {(scan.confidence * 100).toFixed(0)}% match
                       </span>
                     )}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      scan.type === "crop" ? "bg-primary-bg text-primary" : "bg-amber-50 text-amber-700"
+                      scan.type === "crop" ? "bg-primary-bg text-primary" : "bg-warning-bg text-warning"
                     }`}>
                       {scan.type === "crop" ? "Crop" : "Livestock"}
                     </span>

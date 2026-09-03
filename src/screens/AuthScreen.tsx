@@ -88,10 +88,10 @@ export default function AuthScreen() {
     }
   };
 
-  const inputClass = "w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl text-text-primary text-sm transition-all duration-200 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none placeholder:text-text-muted/60";
+  const inputClass = "w-full px-4 py-3.5 bg-bg-secondary/80 border-2 border-border-strong rounded-xl text-text-primary text-sm transition-all duration-200 focus:bg-bg-elevated focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none placeholder:text-text-muted/60";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#E8F5E9] via-white to-[#F1F8E9] flex flex-col justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-bg via-bg-primary to-success-bg flex flex-col justify-center px-4 py-8">
       <div className="max-w-md w-full mx-auto">
         {/* Brand Banner */}
         <div className="text-center mb-6">
@@ -110,7 +110,7 @@ export default function AuthScreen() {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-border shadow-xl p-6">
+        <div className="bg-bg-elevated/90 backdrop-blur-xl rounded-3xl border border-border shadow-xl p-6">
           {/* 1-Tap Guest / Demo Mode Button for Judges */}
           <div className="mb-6">
             <button
@@ -135,19 +135,19 @@ export default function AuthScreen() {
           </div>
 
           <div className="relative flex items-center justify-center mb-5">
-            <div className="border-t border-gray-200 w-full" />
-            <span className="bg-white px-3 text-xs text-text-muted font-medium uppercase tracking-wider">
+            <div className="border-t border-border-strong w-full" />
+            <span className="bg-bg-elevated px-3 text-xs text-text-muted font-medium uppercase tracking-wider">
               {t('auth.or')}
             </span>
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex bg-gray-100/90 rounded-xl p-1 mb-5">
+          <div className="flex bg-border/90 rounded-xl p-1 mb-5">
             <button
               onClick={() => switchMode("login")}
               className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
                 mode === "login"
-                  ? "bg-white text-primary shadow-sm"
+                  ? "bg-bg-elevated text-primary shadow-sm"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -157,7 +157,7 @@ export default function AuthScreen() {
               onClick={() => switchMode("signup")}
               className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
                 mode === "signup"
-                  ? "bg-white text-primary shadow-sm"
+                  ? "bg-bg-elevated text-primary shadow-sm"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -167,16 +167,16 @@ export default function AuthScreen() {
 
           {/* Success / Error alerts */}
           {success && (
-            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5">
-              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-800 font-medium">{success}</p>
+            <div className="mb-4 p-3.5 bg-success-bg border border-success/20 rounded-xl flex items-start gap-2.5">
+              <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" />
+              <p className="text-xs text-success font-medium">{success}</p>
             </div>
           )}
 
           {error && (
-            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-red-600 mt-1.5 shrink-0" />
-              <p className="text-xs text-red-700 font-medium">{error}</p>
+            <div className="mb-4 p-3.5 bg-danger-bg border border-danger/20 rounded-xl flex items-start gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-danger mt-1.5 shrink-0" />
+              <p className="text-xs text-danger font-medium">{error}</p>
             </div>
           )}
 
@@ -231,7 +231,7 @@ export default function AuthScreen() {
                         className={`flex-1 py-2 px-2 rounded-xl text-[11px] font-bold transition-all border ${
                           farmingType === type
                             ? "border-primary bg-primary-bg text-primary shadow-xs"
-                            : "border-gray-200 text-text-muted hover:border-gray-300"
+                            : "border-border-strong text-text-muted hover:border-border"
                         }`}
                       >
                         {t(`auth.${type}`)}
@@ -332,7 +332,7 @@ export default function AuthScreen() {
 
         {/* Footer info */}
         <p className="text-[11px] text-center text-text-muted mt-5">
-          FasalDoc © {new Date().getFullYear()} — Built for Pakistani Farmers & HATCH / NSTP
+          FasalDoc © {new Date().getFullYear()} — Built for Pakistani Farmers & BanoQabil AI Hackathon
         </p>
       </div>
     </div>

@@ -1,4 +1,7 @@
 .env
+*.env
+.env.*
+!.env.example
 
 # Logs
 logs
@@ -14,6 +17,12 @@ dist
 dist-ssr
 *.local
 
+# Test / dev artifacts
+screenshot_*.png
+home_screen.png
+weather_tab.png
+televet_booking.png
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,3 +33,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# IDE / Agent artifacts
+.qoder/
+dev-dist/

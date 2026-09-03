@@ -37,9 +37,9 @@ export default defineConfig(() => ({
       registerType: 'autoUpdate',
       includeAssets: ['nativelyai.svg'],
       manifest: {
-        name: 'FasalDoc — AI Crop & Livestock Health',
+        name: 'FasalDoc — AI Crop & Livestock Health | BanoQabil AI Hackathon',
         short_name: 'FasalDoc',
-        description: 'Diagnose crop and livestock health issues using your phone\'s camera. AI-powered guidance in Urdu and English.',
+        description: 'Diagnose crop and livestock health issues using your phone\'s camera. AI-powered guidance in Urdu and English. BanoQabil AI Hackathon 2025.',
         theme_color: '#2E7D32',
         background_color: '#FAFAFA',
         display: 'standalone',
@@ -86,5 +86,17 @@ export default defineConfig(() => ({
   server: {
     allowedHosts: true as const,
     hmr: false,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js', '@supabase/ssr'],
+          ui: ['lucide-react', 'react-icons'],
+          data: ['dexie', 'zustand'],
+        },
+      },
+    },
   },
 }))

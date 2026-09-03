@@ -11,6 +11,7 @@ import SettingsScreen from "./screens/SettingsScreen";
 import ToolsScreen from "./screens/ToolsScreen";
 import AuthScreen from "./screens/AuthScreen";
 import OfflineBanner from "./components/OfflineBanner";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useSyncOnReconnect } from "./lib/network";
 
 /** Bottom tab bar — 5 tabs matching the PRD spec */
@@ -29,7 +30,7 @@ function TabBar() {
   if (!user) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-border z-50 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-bg-elevated/80 backdrop-blur-lg border-t border-border z-50 safe-area-bottom">
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {tabs.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -68,7 +69,7 @@ function AppHeader() {
   if (!user) return null;
 
   return (
-    <header className="bg-white/80 backdrop-blur-lg border-b border-border sticky top-0 z-40">
+    <header className="bg-bg-elevated/80 backdrop-blur-lg border-b border-border sticky top-0 z-40">
       <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-light rounded-lg flex items-center justify-center shadow-sm">
@@ -133,6 +134,7 @@ function AppRoutes() {
 
   return (
     <div className="max-w-lg mx-auto min-h-screen bg-bg-primary relative flex flex-col">
+      <ErrorBoundary>
       <ProtectedRoute>
         <OfflineBanner />
         <AppHeader />
@@ -149,6 +151,7 @@ function AppRoutes() {
         </div>
         <TabBar />
       </ProtectedRoute>
+      </ErrorBoundary>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { isOnline } from "./db";
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "";
 
-const REQUEST_TIMEOUT_MS = 8_000;
+const REQUEST_TIMEOUT_MS = 25_000;
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   if (!API_URL) throw new Error("VITE_API_URL is not configured");

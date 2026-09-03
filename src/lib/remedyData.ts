@@ -55,7 +55,7 @@ export const REMEDY_DATABASE: Record<string, RemedyInfo> = {
     prevention: "Practice 3-year crop rotation (avoid planting after potatoes or chillies). Avoid overhead sprinkler irrigation. Maintain 60cm plant spacing for air circulation.",
     preventionUrdu: "3 سالہ فصلی ہیر پھیر اپنائیں (ٹماٹر، آلو اور مرچ کے بعد نہ لگائیں)۔ فوارہ آبپاشی سے پرہیز کریں اور پودوں کے درمیان مناسب فاصلہ رکھیں۔",
     severity: "medium",
-    sampleImage: "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=600&auto=format&fit=crop&q=80",
+    sampleImage: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80",
     confidence: 0.89,
   },
   "Tomato___Late_blight": {
@@ -89,7 +89,7 @@ export const REMEDY_DATABASE: Record<string, RemedyInfo> = {
     prevention: "Destroy cull piles and volunteer tomato/potato plants. Stake plants to keep foliage off wet soil.",
     preventionUrdu: "پرانے اور گلے سڑے پودوں کے ڈھیر تلف کریں۔ پودوں کو لکڑیوں سے باندھیں تاکہ پتے گیلی زمین کو نہ چھوئیں۔",
     severity: "critical",
-    sampleImage: "https://images.unsplash.com/photo-1594488554284-9a807d4b4a1b?w=600&auto=format&fit=crop&q=80",
+    sampleImage: "https://images.unsplash.com/photo-1561136594-7f68413baa99?w=600&auto=format&fit=crop&q=80",
     confidence: 0.94,
   },
   "Wheat___Leaf_rust": {
@@ -329,7 +329,75 @@ export const REMEDY_DATABASE: Record<string, RemedyInfo> = {
     severity: "critical",
     sampleImage: "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=600&auto=format&fit=crop&q=80",
     confidence: 0.96,
-  }
+  },
+  "Cotton___Whitefly": {
+    id: "Cotton___Whitefly",
+    category: "crop",
+    cropOrAnimal: "Cotton",
+    cropOrAnimalUrdu: "کپاس",
+    name: "Cotton Whitefly (Silverleaf Whitefly)",
+    nameUrdu: "کپاس کی سفید مکھی",
+    scientificName: "Bemisia tabaci",
+    symptoms: [
+      "Tiny white moth-like insects on undersides of leaves",
+      "Leaves curl upwards, turn yellow and become sticky with honeydew",
+      "Sooty black mould grows on honeydew-covered leaves",
+      "Stunted growth and poor boll opening; transmits Cotton Leaf Curl Virus"
+    ],
+    symptomsUrdu: [
+      "پتوں کی نچلی سطح پر چھوٹی سفید مکھی نما کیڑے",
+      "پتے اوپر کی طرف مڑتے، پیلے ہوتے اور شہد جیسے مواد سے چپچپے ہو جاتے ہیں",
+      "چپچپے پتوں پر سیاہ پھپھوندی کی پرت جم جاتی ہے",
+      "پودے کی نشونما رک جاتی ہے اور ٹنکھیاں ٹھیک نہیں کھلتیں؛ یہ CLCuV وائرس بھی پھیلاتی ہے"
+    ],
+    organic: "Install yellow sticky traps (10-12 per acre). Spray neem oil 5ml/L or neem seed kernel extract weekly. Release predatory mites/ladybird beetles.",
+    organicUrdu: "ایکڑ میں 10-12 پیلی چپچپی ٹرپیں لگائیں۔ نیم کا تیل 5 ملی لیٹر فی لیٹر پانی یا نیم کے بیجوں کا عرق ہفتہ وار چھڑکیں۔ شکار کرنے والے کیڑے چھوڑیں۔",
+    chemical: "Rotate insecticides to avoid resistance: Imidacloprid, Thiamethoxam, Acetamiprid or Pyriproxyfen. Spray underside of leaves thoroughly.",
+    chemicalUrdu: "مقاومت سے بچنے کے لیے ادویات کو تبدیل کریں: ایمڈاکلپورڈ، تھائیامیٹھوکسام، ایسیٹامپریڈ یا پیری پروکسیفین۔ پتوں کی نچلی سطح پر اچھی طرح اسپرے کریں۔",
+    dosage: "Confidor 200 SL: 250ml per acre. Match 50 EC: 300ml per acre. Add sticker/spreader for underside coverage.",
+    dosageUrdu: "کنفیڈور 200 ایس ایل: 250 ملی لیٹر فی ایکڑ۔ میچ 50 ای سی: 300 ملی لیٹر فی ایکڑ۔ پتوں کی نچلی سطح چپکنے کے لیے اسٹکر ملائیں۔",
+    localProducts: ["Confidor 200 SL (Bayer)", "Actara 25 WG (Syngenta)", "Match 50 EC (Syngenta)", "Mospilan 20 SP (Nihon Nohyaku)"],
+    estimatedCostPkr: "Rs. 2,500 – 4,000 per acre",
+    prevention: "Remove weed hosts (e.g., bhindi, datura) around field. Avoid continuous cotton cropping. Use certified virus-free seed.",
+    preventionUrdu: "کھیت کے ارد گرد جڑی بوٹیاں اور متبادل میزبان پودے (بھنڈی، دatura) صاف کریں۔ مسلسل کپاس نہ لگائیں۔ تصدیق شدہ وائرس سے پاک بیج استعمال کریں۔",
+    severity: "high",
+    sampleImage: "https://images.unsplash.com/photo-1596240934758-bc82f2e48e46?w=600&auto=format&fit=crop&q=80",
+    confidence: 0.88,
+  },
+  "Maize___Fall_Armyworm": {
+    id: "Maize___Fall_Armyworm",
+    category: "crop",
+    cropOrAnimal: "Maize",
+    cropOrAnimalUrdu: "مکئی",
+    name: "Maize Fall Armyworm",
+    nameUrdu: "مکئی کا فال آرمی وورم",
+    scientificName: "Spodoptera frugiperda",
+    symptoms: [
+      "Small larvae hide in leaf whorls and feed on tender leaves",
+      "Characteristic 'window-pane' damage on emerging leaves",
+      "Large ragged holes in leaves and chewed tassels/ears",
+      "Frass (insect excreta) visible inside whorls"
+    ],
+    symptomsUrdu: [
+      "چھوٹے کیڑے پتوں کی گولائی میں چھپتے ہیں اور نرم پتے کھاتے ہیں",
+      "نکلتے ہوئے پتوں پر 'ونڈو پین' جیسا نقصان",
+      "پتوں پر بڑے دانتے ہوئے سوراخ اور کھائے ہوئے گوبرے",
+      "پتوں کی گولائی میں کیڑے کا گوبر نظر آتا ہے"
+    ],
+    organic: "Apply neem-based botanicals or Beauveria bassiana bio-pesticide. Hand-pick egg masses and young larvae. Use pheromone traps for monitoring.",
+    organicUrdu: "نیم پر مبنی ادویات یا بیووریا باسیاں بائیو پیسٹیسائڈ کا اسپرے کریں۔ انڈوں کے گچھوں اور چھوٹے کیڑوں کو ہاتھ سے اکھاڑیں۔ فرومون ٹرپس نگرانی کے لیے استعمال کریں۔",
+    chemical: "Chlorantraniliprole, Emamectin benzoate or Lufenuron. Target early larval stages inside whorls before they bore into stem/ear.",
+    chemicalUrdu: "کلورانٹرانیلی پرول، ایمامیکٹن بنزوئیٹ یا لیوفینورون کا استعمال کریں۔ کیڑے سوق یا بھوٹے میں جانے سے پہلے ابتدائی مراحل میں گولائی پر اسپرے کریں۔",
+    dosage: "Coragen 20 SC: 100ml per acre. Proclaim 5 SG: 200g per acre. Add 100ml vegetable oil per 100L water for better penetration.",
+    dosageUrdu: "کوریجین 20 ایس سی: 100 ملی لیٹر فی ایکڑ۔ پروکلیم 5 ایس جی: 200 گرام فی ایکڑ۔ بہتر رساؤ کے لیے 100 لیٹر پانی میں 100 ملی لیٹر سبزیوں کا تیل ملائیں۔",
+    localProducts: ["Coragen 20 SC (FMC)", "Proclaim 5 SG (Syngenta)", "Prevathon 5 SC (DuPont)", "Tracer 480 SC (Dow)"],
+    estimatedCostPkr: "Rs. 1,800 – 3,200 per acre",
+    prevention: "Early planting, regular scouting, and destroying crop residues. Rotate with non-host crops like wheat or gram.",
+    preventionUrdu: "بروقت کاشت، باقاعدہ نگرانی اور فضلہ کو تلف کرنا۔ گندم یا چنا جیسے غیر میزبان فصلوں کے ساتھ ہیر پھیر کریں۔",
+    severity: "high",
+    sampleImage: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=600&auto=format&fit=crop&q=80",
+    confidence: 0.91,
+  },
 };
 
 export const CROP_LIST = [
