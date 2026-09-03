@@ -37,3 +37,5 @@ televet_booking.png
 # IDE / Agent artifacts
 .qoder/
 dev-dist/
+.vercel
+.vercel-tmp/
