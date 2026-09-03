@@ -11,11 +11,11 @@ const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\
 const REQUEST_TIMEOUT_MS = 25_000;
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  if (!API_URL) throw new Error("VITE_API_URL is not configured");
+  const url = API_URL ? `${API_URL}${path}` : path;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -43,7 +43,7 @@ export async function requestDiagnosis(params: {
   lang: "en" | "ur";
   symptoms?: Record<string, unknown>;
 }): Promise<DiagnoseResponse | null> {
-  if (!isOnline() || !API_URL) return null;
+  if (!isOnline()) return null;
   try {
     return await postJson<DiagnoseResponse>("/api/diagnose", params);
   } catch (err) {
@@ -61,7 +61,7 @@ export async function requestChatReply(params: {
   messages: { role: "user" | "assistant"; content: string }[];
   lang: "en" | "ur";
 }): Promise<ChatResponse | null> {
-  if (!isOnline() || !API_URL) return null;
+  if (!isOnline()) return null;
   try {
     return await postJson<ChatResponse>("/api/chat", params);
   } catch (err) {
