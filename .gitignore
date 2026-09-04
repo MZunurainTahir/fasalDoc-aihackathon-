@@ -24,6 +24,8 @@ weather_tab.png
 televet_booking.png
 capture_page.png
 current_state.png
+*.pptx
+pptx-temp/
 
 # Editor directories and files
 .vscode/*
