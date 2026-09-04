@@ -150,15 +150,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     localStorage.removeItem("fasaldoc_demo_mode");
     setIsDemoUser(false);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}`,
-      },
-    });
-    return { error };
+    const normalizedEmail = email.trim().toLowerCase();
+
+    try {
+      // Use backend admin signup so the user is created with a confirmed email.
+      // This avoids Supabase's default email-confirmation flow that blocks login.
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+          fullName,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return {
+          error: { message: data.message || "Signup failed. Please try again." } as AuthError,
+        };
+      }
+
+      // The account is already confirmed on the backend, so log the user in immediately.
+      return await signIn(normalizedEmail, password);
+    } catch (err: any) {
+      return { error: { message: err.message || "Network error" } as AuthError };
+    }
   };
 
   const signIn = async (email: string, password: string) => {

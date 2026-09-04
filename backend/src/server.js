@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { diagnoseImage } from "./diagnose.js";
 import { chatReply } from "./chat.js";
 import { logLLMConfig } from "./llm.js";
+import { signUpUser } from "./auth.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -36,6 +37,20 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use("/api/", limiter);
+
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { email, password, fullName, phone, location, farmingType } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: "email and password are required" });
+    }
+    await signUpUser({ email, password, fullName, phone, location, farmingType });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[/api/signup] error:", err.message);
+    res.status(400).json({ error: "signup_failed", message: err.message });
+  }
+});
 
 app.get("/health", (_req, res) => {
   res.json({
