@@ -122,10 +122,11 @@ export default function HomeScreen() {
           // Also count local active cases for offline-created recoveries.
           let localActiveCases = 0;
           try {
-            localActiveCases = await db.recoveryCases
+            const localActiveCasesList = await db.recoveryCases
               .where("status")
               .equals("active")
-              .count();
+              .toArray();
+            localActiveCases = localActiveCasesList.filter(c => c.user_id === user.id).length;
           } catch { /* ignore */ }
 
           setActiveCases((count || 0) + localActiveCases);
@@ -136,12 +137,15 @@ export default function HomeScreen() {
       } else {
         // Offline: active cases come purely from local storage.
         let localActiveCases = 0;
-        try {
-          localActiveCases = await db.recoveryCases
-            .where("status")
-            .equals("active")
-            .count();
-        } catch { /* ignore */ }
+        if (user) {
+          try {
+            const localActiveCasesList = await db.recoveryCases
+              .where("status")
+              .equals("active")
+              .toArray();
+            localActiveCases = localActiveCasesList.filter(c => c.user_id === user.id).length;
+          } catch { /* ignore */ }
+        }
         setActiveCases(localActiveCases);
       }
 

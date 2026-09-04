@@ -94,6 +94,7 @@ export default function CaptureScreen() {
   const [fieldNotes, setFieldNotes] = useState("");
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const currentScanRef = useRef<{ localId: string; remoteId?: string } | null>(null);
 
   const [symptoms, setSymptoms] = useState<SymptomState>({
     eating: null,
@@ -107,6 +108,7 @@ export default function CaptureScreen() {
     setSymptoms({ eating: null, discharge: null, lethargic: null });
     setFieldNotes("");
     setSaveSuccess(false);
+    currentScanRef.current = null;
   }, []);
 
   const handleFileCapture = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +190,7 @@ export default function CaptureScreen() {
         _synced: false,
       });
       localSaveOk = true;
+      currentScanRef.current = { localId };
     } catch (err) {
       console.error("[CaptureScreen] Failed to save local diagnosis:", err);
     }
@@ -208,6 +211,7 @@ export default function CaptureScreen() {
         });
         localStorage.setItem("fasaldoc_scan_history", JSON.stringify(stored.slice(0, 100)));
         localSaveOk = true;
+        currentScanRef.current = { localId };
       } catch (fallbackErr) {
         console.error("[CaptureScreen] LocalStorage fallback also failed:", fallbackErr);
       }
@@ -235,6 +239,7 @@ export default function CaptureScreen() {
         if (!error && data?.id) {
           // Replace the local temp row with the canonical Supabase row so
           // Home/History deduplication works correctly.
+          currentScanRef.current = { localId, remoteId: data.id };
           await db.diagnoses.where("localId").equals(localId).delete();
           await db.diagnoses.add({
             id: data.id,
@@ -312,22 +317,120 @@ export default function CaptureScreen() {
   const handleTrackRecovery = useCallback(async () => {
     if (!user || !result) return;
 
-    // Get the latest diagnosis for this user
-    const { data } = await supabase
-      .from('diagnoses')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    const scan = currentScanRef.current;
+    if (!scan) {
+      navigate('/history');
+      return;
+    }
 
-    if (data) {
-      await supabase.from('recovery_cases').insert({
+    const caseLocalId = generateLocalId();
+    const now = new Date().toISOString();
+
+    // Save the recovery case locally first (offline-first).
+    try {
+      await db.recoveryCases.add({
+        id: caseLocalId,
+        localId: caseLocalId,
         user_id: user.id,
-        diagnosis_id: data.id,
-        status: 'active',
+        diagnosis_id: scan.remoteId || null,
+        diagnosis_localId: scan.localId,
+        status: "active",
         days_since_diagnosis: 0,
-        last_checked_at: new Date().toISOString(),
+        follow_up_photo_url: null,
+        last_checked_at: now,
+        created_at: now,
+        _synced: false,
+      });
+    } catch (err) {
+      console.error("[CaptureScreen] Failed to save local recovery case:", err);
+    }
+
+    // Try to sync to Supabase if we are online.
+    if (isOnline()) {
+      try {
+        let diagnosisId = scan.remoteId;
+
+        // If the current scan hasn't been synced yet, sync it now so the
+        // recovery case can reference its real Supabase id.
+        if (!diagnosisId) {
+          const { data: diagData, error: diagError } = await supabase
+            .from('diagnoses')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!diagError && diagData?.id) {
+            diagnosisId = diagData.id;
+            // Update the local diagnosis row to the remote id as well.
+            const existing = await db.diagnoses.where("localId").equals(scan.localId).first();
+            if (existing) {
+              await db.diagnoses.where("localId").equals(scan.localId).delete();
+              await db.diagnoses.add({ ...existing, id: diagnosisId, _synced: true });
+            }
+            await db.recoveryCases.where("localId").equals(caseLocalId).modify({ diagnosis_id: diagnosisId });
+          }
+        }
+
+        if (diagnosisId) {
+          const { error } = await supabase.from('recovery_cases').insert({
+            user_id: user.id,
+            diagnosis_id: diagnosisId,
+            status: 'active',
+            days_since_diagnosis: 0,
+            last_checked_at: now,
+          });
+
+          if (!error) {
+            await db.recoveryCases.where("localId").equals(caseLocalId).modify({ _synced: true });
+          } else {
+            await enqueueSync("recovery_cases", "insert", caseLocalId, {
+              localId: caseLocalId,
+              user_id: user.id,
+              diagnosis_id: diagnosisId,
+              diagnosis_localId: scan.localId,
+              status: "active",
+              days_since_diagnosis: 0,
+              last_checked_at: now,
+              created_at: now,
+            });
+          }
+        } else {
+          await enqueueSync("recovery_cases", "insert", caseLocalId, {
+            localId: caseLocalId,
+            user_id: user.id,
+            diagnosis_id: null,
+            diagnosis_localId: scan.localId,
+            status: "active",
+            days_since_diagnosis: 0,
+            last_checked_at: now,
+            created_at: now,
+          });
+        }
+      } catch (err) {
+        console.warn("[CaptureScreen] Recovery case sync error, queued:", err);
+        await enqueueSync("recovery_cases", "insert", caseLocalId, {
+          localId: caseLocalId,
+          user_id: user.id,
+          diagnosis_id: scan.remoteId || null,
+          diagnosis_localId: scan.localId,
+          status: "active",
+          days_since_diagnosis: 0,
+          last_checked_at: now,
+          created_at: now,
+        });
+      }
+    } else {
+      await enqueueSync("recovery_cases", "insert", caseLocalId, {
+        localId: caseLocalId,
+        user_id: user.id,
+        diagnosis_id: scan.remoteId || null,
+        diagnosis_localId: scan.localId,
+        status: "active",
+        days_since_diagnosis: 0,
+        last_checked_at: now,
+        created_at: now,
       });
     }
 

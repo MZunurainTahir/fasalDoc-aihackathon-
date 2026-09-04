@@ -151,7 +151,23 @@ export async function drainSyncQueue() {
 
       if (operation === "insert") {
         const { localId, _synced, ...cleanData } = data as Record<string, unknown>;
-        const { data: inserted, error } = await supabase.from(table).insert(cleanData).select('id');
+
+        // Recovery cases created offline reference a local diagnosis id.
+        // Resolve it to the synced Supabase id before inserting.
+        if (table === "recovery_cases" && !cleanData.diagnosis_id && cleanData.diagnosis_localId) {
+          const syncedDiag = await db.diagnoses
+            .where("localId")
+            .equals(cleanData.diagnosis_localId as string)
+            .first();
+          if (syncedDiag?.id && !syncedDiag.id.startsWith("local_")) {
+            cleanData.diagnosis_id = syncedDiag.id;
+          }
+        }
+
+        const payload = { ...cleanData };
+        delete payload.diagnosis_localId;
+
+        const { data: inserted, error } = await supabase.from(table).insert(payload).select('id');
         if (error) throw error;
         await upsertSyncedId(table, recordId, inserted?.[0]?.id);
       } else if (operation === "update") {
