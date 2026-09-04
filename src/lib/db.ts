@@ -151,8 +151,9 @@ export async function drainSyncQueue() {
 
       if (operation === "insert") {
         const { localId, _synced, ...cleanData } = data as Record<string, unknown>;
-        await supabase.from(table).insert(cleanData);
-        await markSynced(table, recordId);
+        const { data: inserted, error } = await supabase.from(table).insert(cleanData).select('id');
+        if (error) throw error;
+        await upsertSyncedId(table, recordId, inserted?.[0]?.id);
       } else if (operation === "update") {
         await supabase.from(table).update(data).eq("id", recordId);
         await markSynced(table, recordId);
@@ -179,6 +180,32 @@ async function markSynced(table: string, id: string) {
   if (dexieTable) {
     await (db as any)[dexieTable].where("localId").equals(id).modify({ _synced: true });
   }
+}
+
+async function upsertSyncedId(table: string, localId: string, remoteId?: string) {
+  if (!remoteId) {
+    await markSynced(table, localId);
+    return;
+  }
+
+  const tableMap: Record<string, string> = {
+    diagnoses: "diagnoses",
+    chat_sessions: "chatSessions",
+    chat_messages: "chatMessages",
+    recovery_cases: "recoveryCases",
+  };
+  const dexieTable = tableMap[table];
+  if (!dexieTable) return;
+
+  const row = await (db as any)[dexieTable].where("localId").equals(localId).first();
+  if (!row) return;
+
+  await (db as any)[dexieTable].where("localId").equals(localId).delete();
+  await (db as any)[dexieTable].add({
+    ...row,
+    id: remoteId,
+    _synced: true,
+  });
 }
 
 /** Pre-populate rich initial demo data for offline and demo testing */

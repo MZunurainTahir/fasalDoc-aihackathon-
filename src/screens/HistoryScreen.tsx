@@ -23,50 +23,111 @@ export default function HistoryScreen() {
     if (!user) return;
     setLoading(true);
     setUsingCached(false);
+
     try {
-      if (!isOnline()) throw new Error("offline");
-
-      const { data: diagnosesData } = await supabase
-        .from('diagnoses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (diagnosesData) setDiagnoses(diagnosesData as Diagnosis[]);
-
-      // Fetch active recovery cases with their diagnoses
-      const { data: cases } = await supabase
-        .from('recovery_cases')
-        .select('*, diagnosis:diagnosis_id(*)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (cases) setActiveCases(cases as unknown as (RecoveryCase & { diagnosis?: Diagnosis })[]);
-    } catch (err) {
-      // Offline fallback — read from local IndexedDB
-      console.info("[HistoryScreen] Offline — reading from local DB");
-      setUsingCached(true);
+      // Always read local IndexedDB first (unsynced scans live here).
+      let localDiagnoses: any[] = [];
       try {
-        const localDiagnoses = await db.diagnoses
+        localDiagnoses = await db.diagnoses
           .orderBy("created_at")
           .reverse()
           .toArray();
+      } catch (dbErr) {
+        console.warn("[HistoryScreen] IndexedDB read failed:", dbErr);
+      }
 
-        if (localDiagnoses.length > 0) {
-          setDiagnoses(localDiagnoses as unknown as Diagnosis[]);
+      // Restrict to the current user's scans.
+      const userLocalDiagnoses = localDiagnoses.filter(d => d.user_id === user.id);
+
+      // Secondary mirror: localStorage fallback used when IndexedDB fails.
+      let legacyScans: any[] = [];
+      try {
+        const stored = localStorage.getItem("fasaldoc_scan_history");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          legacyScans = Array.isArray(parsed)
+            ? parsed.filter((s: any) => !s.user_id || s.user_id === user.id)
+            : [];
         }
+      } catch { /* ignore */ }
 
+      // Merge IndexedDB + localStorage, preferring IndexedDB when ids overlap.
+      const localById = new Map<string, any>();
+      for (const d of [...userLocalDiagnoses, ...legacyScans]) {
+        const key = d.id || d.localId;
+        if (key && !localById.has(key)) {
+          localById.set(key, d);
+        }
+      }
+      const mergedLocalDiagnoses = Array.from(localById.values());
+
+      let mergedDiagnoses = [...mergedLocalDiagnoses];
+      let mergedCases: (RecoveryCase & { diagnosis?: Diagnosis })[] = [];
+
+      if (isOnline()) {
+        try {
+          const { data: diagnosesData } = await supabase
+            .from('diagnoses')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (diagnosesData) {
+            const unsyncedLocal = mergedLocalDiagnoses.filter(d => !d._synced);
+            mergedDiagnoses = [...diagnosesData, ...unsyncedLocal];
+          }
+
+          // Fetch active recovery cases with their diagnoses
+          const { data: cases } = await supabase
+            .from('recovery_cases')
+            .select('*, diagnosis:diagnosis_id(*)')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (cases) {
+            mergedCases = cases as unknown as (RecoveryCase & { diagnosis?: Diagnosis })[];
+          }
+        } catch (remoteErr) {
+          console.warn("[HistoryScreen] Remote fetch failed — using local data:", remoteErr);
+          setUsingCached(true);
+        }
+      } else {
+        setUsingCached(true);
+      }
+
+      // Deduplicate by canonical id.
+      const seen = new Set<string>();
+      const dedupedDiagnoses = mergedDiagnoses.filter((d) => {
+        const key = d.id;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      dedupedDiagnoses.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setDiagnoses(dedupedDiagnoses as Diagnosis[]);
+
+      // Merge local recovery cases as fallback.
+      try {
         const localCases = await db.recoveryCases
           .orderBy("created_at")
           .reverse()
           .toArray();
 
-        if (localCases.length > 0) {
-          setActiveCases(localCases as unknown as (RecoveryCase & { diagnosis?: Diagnosis })[]);
+        const userLocalCases = localCases.filter(c => c.user_id === user.id);
+        if (userLocalCases.length > 0) {
+          const mappedLocalCases = userLocalCases.map(c => ({
+            ...c,
+            diagnosis: dedupedDiagnoses.find(d => d.id === c.diagnosis_id || d.localId === c.diagnosis_localId),
+          })) as unknown as (RecoveryCase & { diagnosis?: Diagnosis })[];
+          mergedCases = [...mergedCases, ...mappedLocalCases];
         }
       } catch (localErr) {
-        console.error('Error fetching local history:', localErr);
+        console.error('Error fetching local recovery cases:', localErr);
       }
+
+      setActiveCases(mergedCases);
+    } catch (err) {
+      console.error("[HistoryScreen] Error fetching history:", err);
     } finally {
       setLoading(false);
     }

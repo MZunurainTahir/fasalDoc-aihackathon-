@@ -13,7 +13,7 @@ import { SkeletonList } from "../components/Skeleton";
 
 export default function HomeScreen() {
   const { t, lang } = useLanguage();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [recentDiagnoses, setRecentDiagnoses] = useState<Diagnosis[]>([]);
   const [activeCases, setActiveCases] = useState<number>(0);
@@ -48,56 +48,115 @@ export default function HomeScreen() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setUsingCached(false);
+
     try {
-      if (!isOnline()) throw new Error("offline");
-
-      // Fetch recent diagnoses from Supabase
-      const { data: diagnoses } = await supabase
-        .from('diagnoses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (diagnoses) {
-        setRecentDiagnoses(diagnoses as Diagnosis[]);
-        setScanCount(diagnoses.length);
-      }
-
-      // Fetch active recovery cases
-      const { count } = await supabase
-        .from('recovery_cases')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
-
-      setActiveCases(count || 0);
-    } catch (err) {
-      // Offline fallback — read from local IndexedDB
-      console.info("[HomeScreen] Offline — reading from local DB");
-      setUsingCached(true);
+      // Always read local IndexedDB first (unsynced scans live here).
+      let localDiagnoses: any[] = [];
       try {
-        const localDiagnoses = await db.diagnoses
+        localDiagnoses = await db.diagnoses
           .orderBy("created_at")
           .reverse()
-          .limit(5)
           .toArray();
-
-        if (localDiagnoses.length > 0) {
-          setRecentDiagnoses(localDiagnoses as unknown as Diagnosis[]);
-          setScanCount(localDiagnoses.length);
-        }
-
-        const localActiveCases = await db.recoveryCases
-          .where("status")
-          .equals("active")
-          .count();
-        setActiveCases(localActiveCases);
-      } catch (localErr) {
-        console.error('Error fetching local data:', localErr);
+      } catch (dbErr) {
+        console.warn("[HomeScreen] IndexedDB read failed:", dbErr);
       }
+
+      // Restrict to the current user's scans so multiple accounts on the same
+      // device do not see each other's history. Demo user id is also valid.
+      const userLocalDiagnoses = user
+        ? localDiagnoses.filter(d => d.user_id === user.id)
+        : localDiagnoses;
+
+      // Secondary mirror: localStorage fallback used when IndexedDB fails.
+      let legacyScans: any[] = [];
+      try {
+        const stored = localStorage.getItem("fasaldoc_scan_history");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          legacyScans = Array.isArray(parsed)
+            ? parsed.filter((s: any) => !user || !s.user_id || s.user_id === user.id)
+            : [];
+        }
+      } catch { /* ignore */ }
+
+      // Merge IndexedDB + localStorage, preferring IndexedDB when ids overlap.
+      const localById = new Map<string, any>();
+      for (const d of [...userLocalDiagnoses, ...legacyScans]) {
+        const key = d.id || d.localId;
+        if (key && !localById.has(key)) {
+          localById.set(key, d);
+        }
+      }
+      const mergedLocalDiagnoses = Array.from(localById.values());
+
+      let mergedDiagnoses = [...mergedLocalDiagnoses];
+
+      if (isOnline() && user) {
+        try {
+          // Fetch remote diagnoses from Supabase.
+          const { data: remoteDiagnoses } = await supabase
+            .from('diagnoses')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (remoteDiagnoses) {
+            // Remote rows + any local rows that are not yet synced.
+            const unsyncedLocal = mergedLocalDiagnoses.filter(d => !d._synced);
+            mergedDiagnoses = [...remoteDiagnoses, ...unsyncedLocal];
+          }
+
+          // Active recovery cases from Supabase.
+          const { count } = await supabase
+            .from('recovery_cases')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('status', 'active');
+
+          // Also count local active cases for offline-created recoveries.
+          let localActiveCases = 0;
+          try {
+            localActiveCases = await db.recoveryCases
+              .where("status")
+              .equals("active")
+              .count();
+          } catch { /* ignore */ }
+
+          setActiveCases((count || 0) + localActiveCases);
+        } catch (remoteErr) {
+          console.warn("[HomeScreen] Remote fetch failed — using local data:", remoteErr);
+          setUsingCached(true);
+        }
+      } else {
+        // Offline: active cases come purely from local storage.
+        let localActiveCases = 0;
+        try {
+          localActiveCases = await db.recoveryCases
+            .where("status")
+            .equals("active")
+            .count();
+        } catch { /* ignore */ }
+        setActiveCases(localActiveCases);
+      }
+
+      // Deduplicate by canonical id then sort by date (newest first).
+      const seen = new Set<string>();
+      const deduped = mergedDiagnoses.filter((d) => {
+        const key = d.id;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      deduped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setRecentDiagnoses(deduped.slice(0, 5) as Diagnosis[]);
+      setScanCount(deduped.length);
+    } catch (err) {
+      console.error("[HomeScreen] Error fetching data:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchData();

@@ -166,58 +166,123 @@ export default function CaptureScreen() {
     }
 
     setResult(diagnosis);
-    setSaveSuccess(true);
 
     // Save offline-first — always store locally, sync if online
     const localId = generateLocalId();
     const now = new Date().toISOString();
 
-    await db.diagnoses.add({
-      localId,
-      user_id: user.id,
-      type: mode,
-      image_url: capturedImage,
-      predicted_disease: diagnosis.disease,
-      confidence: diagnosis.confidence,
-      remedy_applied: diagnosis.remedy,
-      notes: fieldNotes.trim() || null,
-      created_at: now,
-      _synced: false,
-    });
+    let localSaveOk = false;
 
-    // Also save to localStorage-based store for legacy compat
     try {
-      const { getHistory } = await import("../lib/store");
-      const existing = await getHistory();
-      existing.unshift({
+      await db.diagnoses.add({
         id: localId,
         localId,
-        imageUri: capturedImage,
-        disease: diagnosis.disease,
-        confidence: diagnosis.confidence,
-        date: now,
+        user_id: user.id,
         type: mode,
+        image_url: capturedImage,
+        predicted_disease: diagnosis.disease,
+        confidence: diagnosis.confidence,
+        remedy_applied: diagnosis.remedy,
+        notes: fieldNotes.trim() || null,
+        created_at: now,
+        _synced: false,
       });
-      localStorage.setItem("fasaldoc_scan_history", JSON.stringify(existing.slice(0, 100)));
-    } catch { /* ignore */ }
+      localSaveOk = true;
+    } catch (err) {
+      console.error("[CaptureScreen] Failed to save local diagnosis:", err);
+    }
 
-    if (isOnline()) {
+    // Fallback to localStorage so the scan is never lost, even if IndexedDB fails.
+    if (!localSaveOk) {
+      try {
+        const stored = JSON.parse(localStorage.getItem("fasaldoc_scan_history") || "[]");
+        stored.unshift({
+          id: localId,
+          localId,
+          user_id: user.id,
+          imageUri: capturedImage,
+          disease: diagnosis.disease,
+          confidence: diagnosis.confidence,
+          date: now,
+          type: mode,
+        });
+        localStorage.setItem("fasaldoc_scan_history", JSON.stringify(stored.slice(0, 100)));
+        localSaveOk = true;
+      } catch (fallbackErr) {
+        console.error("[CaptureScreen] LocalStorage fallback also failed:", fallbackErr);
+      }
+    }
+
+    // Keep localStorage in sync as a secondary mirror for robustness.
+    if (localSaveOk) {
+      try {
+        const stored = JSON.parse(localStorage.getItem("fasaldoc_scan_history") || "[]");
+        stored.unshift({
+          id: localId,
+          localId,
+          user_id: user.id,
+          imageUri: capturedImage,
+          disease: diagnosis.disease,
+          confidence: diagnosis.confidence,
+          date: now,
+          type: mode,
+        });
+        localStorage.setItem("fasaldoc_scan_history", JSON.stringify(stored.slice(0, 100)));
+      } catch { /* ignore */ }
+    }
+
+    setSaveSuccess(localSaveOk);
+
+    if (isOnline() && localSaveOk) {
       // Try to sync to Supabase immediately
       try {
-        const { error } = await supabase.from('diagnoses').insert({
-          user_id: user.id,
-          type: mode,
-          image_url: capturedImage,
-          predicted_disease: diagnosis.disease,
-          confidence: diagnosis.confidence,
-          remedy_applied: diagnosis.remedy,
-          notes: fieldNotes.trim() || null,
-        });
-        if (!error) {
-          await db.diagnoses.where("localId").equals(localId).modify({ _synced: true });
+        const { data, error } = await supabase
+          .from('diagnoses')
+          .insert({
+            user_id: user.id,
+            type: mode,
+            image_url: capturedImage,
+            predicted_disease: diagnosis.disease,
+            confidence: diagnosis.confidence,
+            remedy_applied: diagnosis.remedy,
+            notes: fieldNotes.trim() || null,
+          })
+          .select('id')
+          .single();
+
+        if (!error && data?.id) {
+          // Replace the local temp row with the canonical Supabase row so
+          // Home/History deduplication works correctly.
+          await db.diagnoses.where("localId").equals(localId).delete();
+          await db.diagnoses.add({
+            id: data.id,
+            localId,
+            user_id: user.id,
+            type: mode,
+            image_url: capturedImage,
+            predicted_disease: diagnosis.disease,
+            confidence: diagnosis.confidence,
+            remedy_applied: diagnosis.remedy,
+            notes: fieldNotes.trim() || null,
+            created_at: now,
+            _synced: true,
+          });
+        } else {
+          console.warn("[CaptureScreen] Supabase insert failed:", error);
+          await enqueueSync("diagnoses", "insert", localId, {
+            localId,
+            user_id: user.id,
+            type: mode,
+            image_url: capturedImage,
+            predicted_disease: diagnosis.disease,
+            confidence: diagnosis.confidence,
+            remedy_applied: diagnosis.remedy,
+            notes: fieldNotes.trim() || null,
+            created_at: now,
+          });
         }
       } catch (err) {
-        // Enqueue for later sync
+        console.warn("[CaptureScreen] Supabase sync error, queued:", err);
         await enqueueSync("diagnoses", "insert", localId, {
           localId,
           user_id: user.id,
@@ -230,7 +295,7 @@ export default function CaptureScreen() {
           created_at: now,
         });
       }
-    } else {
+    } else if (localSaveOk) {
       // Enqueue for sync when we come back online
       await enqueueSync("diagnoses", "insert", localId, {
         localId,
