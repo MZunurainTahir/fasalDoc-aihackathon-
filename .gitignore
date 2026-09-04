@@ -22,6 +22,8 @@ screenshot_*.png
 home_screen.png
 weather_tab.png
 televet_booking.png
+capture_page.png
+current_state.png
 
 # Editor directories and files
 .vscode/*
