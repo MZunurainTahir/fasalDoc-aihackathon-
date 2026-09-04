@@ -74,7 +74,13 @@ export default function HomeScreen() {
         if (stored) {
           const parsed = JSON.parse(stored);
           legacyScans = Array.isArray(parsed)
-            ? parsed.filter((s: any) => !user || !s.user_id || s.user_id === user.id)
+            ? parsed.filter((s: any) => {
+                if (!s || (!s.id && !s.localId)) return false;
+                if (s.user_id && user && s.user_id !== user.id) return false;
+                if (!s.disease && !s.predicted_disease) return false;
+                if (!s.date && !s.created_at) return false;
+                return true;
+              })
             : [];
         }
       } catch { /* ignore */ }

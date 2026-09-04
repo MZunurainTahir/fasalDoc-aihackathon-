@@ -192,7 +192,7 @@ export default function CaptureScreen() {
       console.error("[CaptureScreen] Failed to save local diagnosis:", err);
     }
 
-    // Fallback to localStorage so the scan is never lost, even if IndexedDB fails.
+    // Fallback to localStorage so the scan is never lost if IndexedDB fails.
     if (!localSaveOk) {
       try {
         const stored = JSON.parse(localStorage.getItem("fasaldoc_scan_history") || "[]");
@@ -211,24 +211,6 @@ export default function CaptureScreen() {
       } catch (fallbackErr) {
         console.error("[CaptureScreen] LocalStorage fallback also failed:", fallbackErr);
       }
-    }
-
-    // Keep localStorage in sync as a secondary mirror for robustness.
-    if (localSaveOk) {
-      try {
-        const stored = JSON.parse(localStorage.getItem("fasaldoc_scan_history") || "[]");
-        stored.unshift({
-          id: localId,
-          localId,
-          user_id: user.id,
-          imageUri: capturedImage,
-          disease: diagnosis.disease,
-          confidence: diagnosis.confidence,
-          date: now,
-          type: mode,
-        });
-        localStorage.setItem("fasaldoc_scan_history", JSON.stringify(stored.slice(0, 100)));
-      } catch { /* ignore */ }
     }
 
     setSaveSuccess(localSaveOk);
