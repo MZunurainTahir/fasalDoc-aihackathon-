@@ -39,7 +39,7 @@ export default defineConfig(() => ({
       manifest: {
         name: 'FasalDoc — AI Crop & Livestock Health | BanoQabil AI Hackathon',
         short_name: 'FasalDoc',
-        description: 'Diagnose crop and livestock health issues using your phone\'s camera. AI-powered guidance in Urdu and English. BanoQabil AI Hackathon 2025.',
+        description: 'Diagnose crop and livestock health issues using your phone\'s camera. AI-powered guidance in Urdu and English. BanoQabil AI Hackathon 2026.',
         theme_color: '#2E7D32',
         background_color: '#FAFAFA',
         display: 'standalone',

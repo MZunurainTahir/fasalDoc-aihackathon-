@@ -221,7 +221,7 @@ export default function HomeScreen() {
             <p className="text-white font-bold text-sm">BanoQabil AI Hackathon</p>
             <p className="text-white/70 text-[11px]">{lang === "ur" ? "AI زراعت ہیکاتھن — پاکستان" : "AI Agriculture Innovation — Pakistan"}</p>
           </div>
-          <span className="text-[10px] bg-white/20 text-white px-2.5 py-1 rounded-full font-bold">2025</span>
+          <span className="text-[10px] bg-white/20 text-white px-2.5 py-1 rounded-full font-bold">2026</span>
         </div>
       </div>
 

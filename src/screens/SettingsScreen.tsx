@@ -327,7 +327,7 @@ export default function SettingsScreen() {
         <div className="flex items-center justify-center gap-1.5 mt-2">
           <Award className="w-3 h-3 text-emerald-600" />
           <p className="text-[10px] text-emerald-700 font-semibold">
-            BanoQabil AI Hackathon 2025
+            BanoQabil AI Hackathon 2026
           </p>
         </div>
       </div>

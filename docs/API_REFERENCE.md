@@ -24,7 +24,7 @@ Returns the server health status and active LLM provider configuration.
 {
   "status": "ok",
   "app": "FasalDoc Backend",
-  "hackathon": "BanoQabil AI Hackathon 2025",
+  "hackathon": "BanoQabil AI Hackathon 2026",
   "providers": {
     "gemini": true,
     "groq": true,

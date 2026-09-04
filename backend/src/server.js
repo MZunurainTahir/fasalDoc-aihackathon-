@@ -56,7 +56,7 @@ app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     app: "FasalDoc — AI Crop & Livestock Health",
-    hackathon: "BanoQabil AI Hackathon 2025",
+    hackathon: "BanoQabil AI Hackathon 2026",
     time: new Date().toISOString(),
     providers: {
       groq: Boolean(process.env.GROQ_API_KEY),
@@ -103,7 +103,7 @@ app.use((_req, res) => res.status(404).json({ error: "not_found" }));
 
 app.listen(PORT, () => {
   console.log(`\n🌾 FasalDoc Backend — AI Crop & Livestock Health`);
-  console.log(`   BanoQabil AI Hackathon 2025`);
+  console.log(`   BanoQabil AI Hackathon 2026`);
   console.log(`   Listening on port ${PORT}\n`);
   logLLMConfig();
 });
